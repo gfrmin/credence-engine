@@ -35,6 +35,7 @@ from src.analysis.metrics import (
 )
 from src.analysis.visualisation import (
     abstention_analysis,
+    calibration_plot,
     cumulative_score_plot,
     score_comparison_bar,
     tool_calls_comparison,
@@ -180,6 +181,19 @@ def save_plots(results: dict[str, list[BenchmarkResult]], out_dir: Path) -> None
     fig = abstention_analysis(results)
     fig.savefig(out_dir / "abstention_analysis.png", dpi=150)
     plt.close(fig)
+
+    # Calibration plot for agents with belief snapshots (e.g. bayesian, oracle)
+    for agent_name, runs in results.items():
+        for run in runs:
+            has_conf = any(
+                r.belief_snapshot and "answer_posterior" in r.belief_snapshot
+                for r in run.records if r.action_type == "submit"
+            )
+            if has_conf:
+                fig = calibration_plot(run)
+                fig.savefig(out_dir / f"calibration_{agent_name}_seed{run.seed}.png", dpi=150)
+                plt.close(fig)
+                break  # one representative per agent
 
 
 def main():

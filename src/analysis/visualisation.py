@@ -8,12 +8,38 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
 from src.environment.benchmark import BenchmarkResult
 from src.inference.beta_posterior import CATEGORIES
+
+
+def set_publication_style() -> None:
+    """Set matplotlib rcParams for publication-quality plots."""
+    mpl.rcParams.update({
+        "font.family": "sans-serif",
+        "font.size": 10,
+        "axes.labelsize": 12,
+        "axes.titlesize": 14,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+        "legend.frameon": True,
+        "legend.framealpha": 0.8,
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+        "grid.color": "#cccccc",
+        "lines.linewidth": 2.0,
+        "figure.dpi": 150,
+        "savefig.dpi": 150,
+        "savefig.bbox": "tight",
+    })
+
+
+set_publication_style()
 
 
 def cumulative_score_plot(

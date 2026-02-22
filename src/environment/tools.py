@@ -68,8 +68,8 @@ def make_spec_tools() -> tuple[SimulatedTool, SimulatedTool, SimulatedTool, Simu
     tool_a = SimulatedTool(
         name="quick_search",
         reliability_by_category={
-            "factual": 0.85, "numerical": 0.30, "recent_events": 0.75,
-            "misconceptions": 0.35, "reasoning": 0.50,
+            "factual": 0.70, "numerical": 0.20, "recent_events": 0.65,
+            "misconceptions": 0.25, "reasoning": 0.40,
         },
         cost=1.0,
         coverage_by_category=dict(all_covered),
@@ -79,13 +79,13 @@ def make_spec_tools() -> tuple[SimulatedTool, SimulatedTool, SimulatedTool, Simu
     tool_b = SimulatedTool(
         name="knowledge_base",
         reliability_by_category={
-            "factual": 0.95, "numerical": 0.40, "recent_events": 0.60,
-            "misconceptions": 0.90, "reasoning": 0.50,
+            "factual": 0.92, "numerical": 0.40, "recent_events": 0.55,
+            "misconceptions": 0.88, "reasoning": 0.45,
         },
-        cost=3.0,
+        cost=2.0,
         coverage_by_category={
-            "factual": 0.70, "numerical": 0.30, "recent_events": 0.40,
-            "misconceptions": 0.60, "reasoning": 0.20,
+            "factual": 0.65, "numerical": 0.30, "recent_events": 0.35,
+            "misconceptions": 0.55, "reasoning": 0.20,
         },
         no_answer_type=ResponseType.NO_RESULT,
     )
@@ -107,8 +107,8 @@ def make_spec_tools() -> tuple[SimulatedTool, SimulatedTool, SimulatedTool, Simu
     tool_d = SimulatedTool(
         name="llm_direct",
         reliability_by_category={
-            "factual": 0.70, "numerical": 0.55, "recent_events": 0.50,
-            "misconceptions": 0.45, "reasoning": 0.75,
+            "factual": 0.65, "numerical": 0.50, "recent_events": 0.45,
+            "misconceptions": 0.40, "reasoning": 0.72,
         },
         cost=2.0,
         coverage_by_category=dict(all_covered),

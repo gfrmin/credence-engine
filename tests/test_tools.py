@@ -45,17 +45,17 @@ class TestSpecToolStructure:
 
     def test_costs(self, spec_tools):
         costs = [t.cost for t in spec_tools]
-        assert costs == [1.0, 3.0, 1.0, 2.0]
+        assert costs == [1.0, 2.0, 1.0, 2.0]
 
     def test_tool_a_reliability(self, spec_tools):
         r = spec_tools[0].reliability_by_category
-        assert r == {"factual": 0.85, "numerical": 0.30, "recent_events": 0.75,
-                      "misconceptions": 0.35, "reasoning": 0.50}
+        assert r == {"factual": 0.70, "numerical": 0.20, "recent_events": 0.65,
+                      "misconceptions": 0.25, "reasoning": 0.40}
 
     def test_tool_b_reliability(self, spec_tools):
         r = spec_tools[1].reliability_by_category
-        assert r == {"factual": 0.95, "numerical": 0.40, "recent_events": 0.60,
-                      "misconceptions": 0.90, "reasoning": 0.50}
+        assert r == {"factual": 0.92, "numerical": 0.40, "recent_events": 0.55,
+                      "misconceptions": 0.88, "reasoning": 0.45}
 
     def test_tool_c_reliability(self, spec_tools):
         r = spec_tools[2].reliability_by_category
@@ -64,13 +64,13 @@ class TestSpecToolStructure:
 
     def test_tool_d_reliability(self, spec_tools):
         r = spec_tools[3].reliability_by_category
-        assert r == {"factual": 0.70, "numerical": 0.55, "recent_events": 0.50,
-                      "misconceptions": 0.45, "reasoning": 0.75}
+        assert r == {"factual": 0.65, "numerical": 0.50, "recent_events": 0.45,
+                      "misconceptions": 0.40, "reasoning": 0.72}
 
     def test_tool_b_coverage(self, spec_tools):
         c = spec_tools[1].coverage_by_category
-        assert c == {"factual": 0.70, "numerical": 0.30, "recent_events": 0.40,
-                      "misconceptions": 0.60, "reasoning": 0.20}
+        assert c == {"factual": 0.65, "numerical": 0.30, "recent_events": 0.35,
+                      "misconceptions": 0.55, "reasoning": 0.20}
 
     def test_tool_c_coverage(self, spec_tools):
         c = spec_tools[2].coverage_by_category
@@ -120,16 +120,16 @@ class TestRates:
         return correct / len(covered)
 
     @pytest.mark.parametrize("cat,expected", [
-        ("factual", 0.85), ("numerical", 0.30), ("recent_events", 0.75),
-        ("misconceptions", 0.35), ("reasoning", 0.50),
+        ("factual", 0.70), ("numerical", 0.20), ("recent_events", 0.65),
+        ("misconceptions", 0.25), ("reasoning", 0.40),
     ])
     def test_tool_a_rates(self, spec_tools, cat, expected):
         rate = self._measure_correct_rate(spec_tools[0], cat)
         assert abs(rate - expected) < 0.05, f"Tool A {cat}: got {rate:.3f}, expected {expected}"
 
     @pytest.mark.parametrize("cat,expected", [
-        ("factual", 0.95), ("numerical", 0.40), ("recent_events", 0.60),
-        ("misconceptions", 0.90), ("reasoning", 0.50),
+        ("factual", 0.92), ("numerical", 0.40), ("recent_events", 0.55),
+        ("misconceptions", 0.88), ("reasoning", 0.45),
     ])
     def test_tool_b_rates(self, spec_tools, cat, expected):
         rate = self._measure_correct_rate(spec_tools[1], cat)
@@ -144,8 +144,8 @@ class TestRates:
             assert resp.candidate_idx == q.correct_index
 
     @pytest.mark.parametrize("cat,expected", [
-        ("factual", 0.70), ("numerical", 0.55), ("recent_events", 0.50),
-        ("misconceptions", 0.45), ("reasoning", 0.75),
+        ("factual", 0.65), ("numerical", 0.50), ("recent_events", 0.45),
+        ("misconceptions", 0.40), ("reasoning", 0.72),
     ])
     def test_tool_d_rates(self, spec_tools, cat, expected):
         rate = self._measure_correct_rate(spec_tools[3], cat)

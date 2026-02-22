@@ -53,11 +53,11 @@ key property that makes the task non-trivial.
 
 | Category | P(correct) | Notes |
 |----------|-----------|-------|
-| Factual lookup | 0.85 | Web search's strength |
-| Numerical | 0.30 | Search returns text, not computation |
-| Recent events | 0.75 | Good but not always current |
-| Misconceptions | 0.35 | Returns popular (wrong) answer |
-| Reasoning | 0.50 | Hit or miss |
+| Factual lookup | 0.70 | Web search's strength |
+| Numerical | 0.20 | Search returns text, not computation |
+| Recent events | 0.65 | Good but not always current |
+| Misconceptions | 0.25 | Returns popular (wrong) answer |
+| Reasoning | 0.40 | Hit or miss |
 
 Cost: 1 point per query.
 
@@ -67,13 +67,13 @@ When incorrect, returns a random wrong answer uniformly from the 3 incorrect can
 
 | Category | P(correct) | P(coverage) | Notes |
 |----------|-----------|-------------|-------|
-| Factual lookup | 0.95 | 0.70 | Excellent but incomplete |
+| Factual lookup | 0.92 | 0.65 | Excellent but incomplete |
 | Numerical | 0.40 | 0.30 | Limited coverage |
-| Recent events | 0.60 | 0.40 | Database not always current |
-| Misconceptions | 0.90 | 0.60 | Curated = fewer misconceptions |
-| Reasoning | 0.50 | 0.20 | Not designed for reasoning |
+| Recent events | 0.55 | 0.35 | Database not always current |
+| Misconceptions | 0.88 | 0.55 | Curated = fewer misconceptions |
+| Reasoning | 0.45 | 0.20 | Not designed for reasoning |
 
-Cost: 3 points per query.
+Cost: 2 points per query.
 
 Returns "no_result" with probability (1 - P(coverage)). When it does return a result,
 it's correct with P(correct). "no_result" is informative — it tells the agent the KB
@@ -96,11 +96,11 @@ uselessness outside it is a strong signal for category inference.
 
 | Category | P(correct) | Notes |
 |----------|-----------|-------|
-| Factual lookup | 0.70 | Decent general knowledge |
-| Numerical | 0.55 | Can do simple maths, often wrong on complex |
-| Recent events | 0.50 | Training cutoff limits |
-| Misconceptions | 0.45 | LLMs absorb misconceptions too |
-| Reasoning | 0.75 | Reasoning is LLMs' relative strength |
+| Factual lookup | 0.65 | Decent general knowledge |
+| Numerical | 0.50 | Can do simple maths, often wrong on complex |
+| Recent events | 0.45 | Training cutoff limits |
+| Misconceptions | 0.40 | LLMs absorb misconceptions too |
+| Reasoning | 0.72 | Reasoning is LLMs' relative strength |
 
 Cost: 2 points per query.
 
@@ -144,14 +144,14 @@ class SimulatedTool:
 | Wrong answer | -5 |
 | Abstain ("I don't know") | 0 |
 | Tool A query | -1 |
-| Tool B query | -3 |
+| Tool B query | -2 |
 | Tool C query | -1 |
 | Tool D query | -2 |
 
 **Why these specific values:**
 - The +10/-5 asymmetry means break-even confidence for submitting is P(correct) = 1/3.
   This creates a meaningful decision boundary for abstention.
-- Tool B is expensive, creating a real cost-benefit tradeoff for cross-verification.
+- Tool B is moderately expensive, creating a real cost-benefit tradeoff for cross-verification.
 - Tool D (LLM) is moderately expensive — the agent shouldn't use it casually.
 
 **Maximum possible score:** 500 (all correct, one free tool call each... but no tool is free)
@@ -518,11 +518,11 @@ with category-dependent reliability.
 
 Same as Experiment 1, but Tool A's reliability drops at question 25:
 
-    Factual: 0.85 → 0.40
-    Numerical: 0.30 → 0.30 (unchanged — already bad)
-    Recent events: 0.75 → 0.35
-    Misconceptions: 0.35 → 0.35 (unchanged)
-    Reasoning: 0.50 → 0.25
+    Factual: 0.70 → 0.35
+    Numerical: 0.20 → 0.15
+    Recent events: 0.65 → 0.30
+    Misconceptions: 0.25 → 0.20
+    Reasoning: 0.40 → 0.20
 
 **Framing:** "The web search API switches to a different, lower-quality index."
 This happens routinely in production.

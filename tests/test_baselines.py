@@ -112,11 +112,11 @@ class TestAllToolsAgent:
             assert rec.action_type == "submit"
 
     def test_tool_cost(self, spec_tools, questions_5):
-        """Each question costs 1+3+1+2 = 7 points in tools."""
+        """Each question costs 1+2+1+2 = 6 points in tools."""
         agent = AllToolsAgent(num_tools=4)
         result = run_benchmark(agent, spec_tools, questions_5, seed=42)
         for rec in result.records:
-            assert rec.tool_cost == 7.0
+            assert rec.tool_cost == 6.0
 
 
 # --- SingleBestToolAgent tests ---

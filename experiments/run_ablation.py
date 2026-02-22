@@ -15,8 +15,11 @@ from pathlib import Path
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from src.agents.bayesian_agent import BayesianAgent, infer_category_prior
 from src.analysis.metrics import accuracy, total_score, tool_calls_per_question
+from src.analysis.visualisation import score_comparison_bar, tool_calls_comparison
 from src.environment.benchmark import BenchmarkResult, run_benchmark
 from src.environment.questions import get_questions
 from src.environment.tools import make_spec_tools, tool_config_for
@@ -189,6 +192,51 @@ def ablation_table(results: dict[str, list[BenchmarkResult]]) -> str:
     return "\n".join(lines)
 
 
+def save_results(results: dict[str, list[BenchmarkResult]], out_dir: Path) -> None:
+    """Save ablation results as JSON."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    data = {}
+    for agent_name, runs in results.items():
+        data[agent_name] = [
+            {
+                "seed": r.seed,
+                "total_score": r.total_score,
+                "total_reward": r.total_reward,
+                "total_tool_cost": r.total_tool_cost,
+                "records": [
+                    {
+                        "question_id": rec.question_id,
+                        "category": rec.category,
+                        "action_type": rec.action_type,
+                        "was_correct": rec.was_correct,
+                        "reward": rec.reward,
+                        "tool_cost": rec.tool_cost,
+                        "tools_queried": list(rec.tools_queried),
+                    }
+                    for rec in r.records
+                ],
+            }
+            for r in runs
+        ]
+
+    with open(out_dir / "ablation_results.json", "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def save_plots(results: dict[str, list[BenchmarkResult]], out_dir: Path) -> None:
+    """Generate and save ablation plots."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    fig = score_comparison_bar(results)
+    fig.savefig(out_dir / "ablation_comparison.png")
+    plt.close(fig)
+
+    fig = tool_calls_comparison(results)
+    fig.savefig(out_dir / "ablation_tool_calls.png")
+    plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run ablation studies")
     parser.add_argument("--seeds", type=int, default=20, help="Number of seeds")
@@ -198,7 +246,8 @@ def main():
     results = run_ablation(n_seeds=args.seeds)
 
     out_dir = RESULTS_DIR / "ablation"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    save_results(results, out_dir)
+    save_plots(results, out_dir)
 
     print("\n" + ablation_table(results))
     print(f"\nResults saved to {out_dir}/", file=sys.stderr)

@@ -51,11 +51,15 @@ For each question, select from the 4 provided candidate answers, or abstain.
 
 def _get_llm():
     """Create LLM based on CREDENCE_LLM_PROVIDER env var."""
-    provider = os.environ.get("CREDENCE_LLM_PROVIDER", "openai").lower()
+    provider = os.environ.get("CREDENCE_LLM_PROVIDER", "ollama").lower()
 
     if provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(model="claude-sonnet-4-20250514", temperature=0.0)
+    elif provider == "ollama":
+        from langchain_ollama import ChatOllama
+        model = os.environ.get("CREDENCE_OLLAMA_MODEL", "llama3.1")
+        return ChatOllama(model=model, temperature=0.0)
     else:
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model="gpt-4o", temperature=0.0)
@@ -80,6 +84,7 @@ class LangChainAgent:
         question_text: str = "",
     ) -> None:
         self._question_id = question_id
+        self._question_text = question_text or question_id
         self._candidates = candidates
         self._num_tools = num_tools
         self._tools_queried = []
@@ -113,8 +118,11 @@ class LangChainAgent:
         llm = _get_llm()
 
         # Build user message
-        parts = [f"Question: {self._question_id}"]
-        parts.append(f"Candidates: {list(self._candidates)}")
+        parts = [f"Question: {self._question_text}"]
+        candidate_lines = "\n".join(
+            f"  {i}: {c}" for i, c in enumerate(self._candidates)
+        )
+        parts.append(f"Candidates:\n{candidate_lines}")
 
         if self._tool_responses:
             parts.append("\nTool results so far:")
@@ -123,7 +131,7 @@ class LangChainAgent:
                 if resp is None:
                     parts.append(f"  {tool_name}: no result / not applicable")
                 else:
-                    parts.append(f"  {tool_name}: {self._candidates[resp]}")
+                    parts.append(f"  {tool_name}: candidate {resp} ({self._candidates[resp]})")
 
         available = [i for i in range(self._num_tools) if i not in self._tool_responses]
         if available:
@@ -132,13 +140,19 @@ class LangChainAgent:
                 for i in available
             )
             parts.append(f"\nAvailable tools (not yet queried): {tool_list}")
-
-        parts.append(
-            "\nRespond with EXACTLY one of:\n"
-            "- QUERY <tool_name> (to query a tool)\n"
-            "- SUBMIT <candidate_index> (0-3, to submit an answer)\n"
-            "- ABSTAIN (if unsure)"
-        )
+            parts.append(
+                "\nRespond with EXACTLY one of:\n"
+                "- QUERY <tool_name>\n"
+                "- SUBMIT <index> (the candidate number 0-3)\n"
+                "- ABSTAIN"
+            )
+        else:
+            parts.append("\nAll tools have been queried. You must now decide.")
+            parts.append(
+                "\nRespond with EXACTLY one of:\n"
+                "- SUBMIT <index> (the candidate number 0-3)\n"
+                "- ABSTAIN"
+            )
 
         from langchain_core.messages import HumanMessage, SystemMessage
         messages = [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content="\n".join(parts))]
@@ -154,12 +168,14 @@ class LangChainAgent:
             return Action(ActionType.ABSTAIN)
 
         if "SUBMIT" in text:
-            for ch in text:
+            # Look for a digit after "SUBMIT"
+            submit_pos = text.index("SUBMIT")
+            for ch in text[submit_pos + 6:]:
                 if ch.isdigit():
                     idx = int(ch)
                     if 0 <= idx < len(self._candidates):
                         return Action(ActionType.SUBMIT, answer_idx=idx)
-            return Action(ActionType.SUBMIT, answer_idx=0)
+            # No valid digit after SUBMIT — fall through to default
 
         if "QUERY" in text:
             text_lower = content.strip().lower()
@@ -170,9 +186,18 @@ class LangChainAgent:
             for i in range(self._num_tools):
                 if i not in self._tool_responses:
                     return Action(ActionType.QUERY, tool_idx=i)
+            # All tools exhausted — fall through to default
 
-        # Default: submit candidate 0
-        return Action(ActionType.SUBMIT, answer_idx=0)
+        # Default: submit majority-voted tool answer, or candidate 0
+        return Action(ActionType.SUBMIT, answer_idx=self._majority_answer())
+
+    def _majority_answer(self) -> int:
+        """Return the most common non-None tool response, or 0 as fallback."""
+        from collections import Counter
+        votes = [r for r in self._tool_responses.values() if r is not None]
+        if not votes:
+            return 0
+        return Counter(votes).most_common(1)[0][0]
 
     def on_tool_response(self, tool_idx: int, response: int | None) -> None:
         self._tools_queried.append(tool_idx)

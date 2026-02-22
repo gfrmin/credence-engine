@@ -64,8 +64,11 @@ class LangChainEnhancedAgent(LangChainAgent):
                 )
             parts.append("")
 
-        parts.append(f"Question: {self._question_id}")
-        parts.append(f"Candidates: {list(self._candidates)}")
+        parts.append(f"Question: {self._question_text}")
+        candidate_lines = "\n".join(
+            f"  {i}: {c}" for i, c in enumerate(self._candidates)
+        )
+        parts.append(f"Candidates:\n{candidate_lines}")
 
         if self._tool_responses:
             parts.append("\nTool results so far:")
@@ -74,7 +77,7 @@ class LangChainEnhancedAgent(LangChainAgent):
                 if resp is None:
                     parts.append(f"  {tool_name}: no result / not applicable")
                 else:
-                    parts.append(f"  {tool_name}: {self._candidates[resp]}")
+                    parts.append(f"  {tool_name}: candidate {resp} ({self._candidates[resp]})")
 
         available = [i for i in range(self._num_tools) if i not in self._tool_responses]
         if available:
@@ -83,13 +86,19 @@ class LangChainEnhancedAgent(LangChainAgent):
                 for i in available
             )
             parts.append(f"\nAvailable tools (not yet queried): {tool_list}")
-
-        parts.append(
-            "\nRespond with EXACTLY one of:\n"
-            "- QUERY <tool_name> (to query a tool)\n"
-            "- SUBMIT <candidate_index> (0-3, to submit an answer)\n"
-            "- ABSTAIN (if unsure)"
-        )
+            parts.append(
+                "\nRespond with EXACTLY one of:\n"
+                "- QUERY <tool_name>\n"
+                "- SUBMIT <index> (the candidate number 0-3)\n"
+                "- ABSTAIN"
+            )
+        else:
+            parts.append("\nAll tools have been queried. You must now decide.")
+            parts.append(
+                "\nRespond with EXACTLY one of:\n"
+                "- SUBMIT <index> (the candidate number 0-3)\n"
+                "- ABSTAIN"
+            )
 
         from langchain_core.messages import HumanMessage, SystemMessage
         messages = [

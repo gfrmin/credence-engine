@@ -27,10 +27,10 @@ from src.inference.voi import ToolConfig
 # --- Helper: standard 4-tool configs matching the spec ---
 
 def make_spec_tool_configs() -> list[ToolConfig]:
-    """Tool configs from the spec: A(cost=1), B(cost=3), C(cost=1), D(cost=2)."""
+    """Tool configs from the spec: A(cost=1), B(cost=2), C(cost=1), D(cost=2)."""
     return [
         ToolConfig(cost=1.0, coverage_by_category=np.ones(NUM_CATEGORIES)),         # A
-        ToolConfig(cost=3.0, coverage_by_category=np.array([0.7, 0.3, 0.4, 0.6, 0.2])),  # B
+        ToolConfig(cost=2.0, coverage_by_category=np.array([0.65, 0.3, 0.35, 0.55, 0.2])),  # B
         ToolConfig(cost=1.0, coverage_by_category=np.array([0.0, 1.0, 0.0, 0.0, 0.0])),  # C
         ToolConfig(cost=2.0, coverage_by_category=np.ones(NUM_CATEGORIES)),         # D
     ]

@@ -336,10 +336,10 @@ class TestConfidenceCalibration:
 
         # Pre-seed reliability toward truth (as if agent learned from 10 prior questions)
         true_r = {
-            0: [0.85, 0.30, 0.75, 0.35, 0.50],
-            1: [0.95, 0.40, 0.60, 0.90, 0.50],
+            0: [0.70, 0.20, 0.65, 0.25, 0.40],
+            1: [0.92, 0.40, 0.55, 0.88, 0.45],
             2: [0.00, 1.00, 0.00, 0.00, 0.00],
-            3: [0.70, 0.55, 0.50, 0.45, 0.75],
+            3: [0.65, 0.50, 0.45, 0.40, 0.72],
         }
         for t_idx, rels in true_r.items():
             for c_idx, r in enumerate(rels):
