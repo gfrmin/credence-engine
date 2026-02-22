@@ -4,3 +4,7 @@ __pycache__/
 .coverage
 .pytest_cache/
 .venv/
+
+# Older experiment output dirs
+results/drift/
+results/stationary/
