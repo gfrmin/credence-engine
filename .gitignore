@@ -5,6 +5,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 
-# Older experiment output dirs
-results/drift/
-results/stationary/
+# Generated experiment output (reproducible via experiments/)
+results/
+!results/RESULTS.md
