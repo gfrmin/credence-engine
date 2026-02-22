@@ -77,6 +77,7 @@ class LangChainAgent:
 
     def on_question_start(
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        question_text: str = "",
     ) -> None:
         self._question_id = question_id
         self._candidates = candidates

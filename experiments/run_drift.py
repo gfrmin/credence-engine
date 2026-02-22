@@ -24,10 +24,10 @@ from src.agents.baselines import (
     SingleBestToolAgent,
 )
 from src.agents.bayesian_agent import BayesianAgent
-from src.analysis.metrics import accuracy, total_score
-from src.environment.benchmark import BenchmarkResult, run_benchmark
+from src.environment.benchmark import BenchmarkResult
 from src.environment.questions import get_questions
 from src.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
+from src.inference.beta_posterior import CATEGORIES
 
 
 RESULTS_DIR = Path("results")
@@ -38,18 +38,18 @@ def make_degraded_tool_a(original: SimulatedTool) -> SimulatedTool:
     """Tool A after drift: reliability drops per SPEC §7.2."""
     return original._replace(
         reliability_by_category={
-            "factual": 0.40,
-            "numerical": 0.30,
-            "recent_events": 0.35,
-            "misconceptions": 0.35,
-            "reasoning": 0.25,
+            "factual": 0.35,
+            "numerical": 0.15,
+            "recent_events": 0.30,
+            "misconceptions": 0.20,
+            "reasoning": 0.20,
         },
     )
 
 
 def run_drift_experiment(
     n_seeds: int = 20,
-) -> dict[str, list[BenchmarkResult]]:
+) -> tuple[dict[str, list[BenchmarkResult]], dict[str, list[np.ndarray]]]:
     """Run agents with tool A degrading at question 25."""
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
@@ -66,6 +66,9 @@ def run_drift_experiment(
     ]
 
     results: dict[str, list[BenchmarkResult]] = {}
+    # Track Tool A learned reliability per question for Bayesian agents
+    # Key: agent_name, Value: list of arrays (n_seeds x n_questions x n_categories)
+    reliability_traces: dict[str, list[np.ndarray]] = {}
 
     for seed in range(n_seeds):
         questions = get_questions(seed=seed)
@@ -89,13 +92,18 @@ def run_drift_experiment(
             total_tool_cost = 0.0
             num_tools = 4
 
+            # Per-question reliability trace for Tool A (only for Bayesian agents)
+            is_bayesian = hasattr(agent, "reliability_table")
+            seed_trace = []  # list of arrays, one per question
+
             for q_idx, question in enumerate(questions):
                 # Switch tools at drift point
                 current_tools = list(spec_tools)
                 if q_idx >= DRIFT_POINT:
                     current_tools[0] = degraded_a
 
-                agent.on_question_start(question.id, question.candidates, num_tools)
+                agent.on_question_start(question.id, question.candidates, num_tools,
+                                       question_text=question.text)
                 used = []
                 tool_responses = {}
                 q_cost = 0.0
@@ -136,6 +144,17 @@ def run_drift_experiment(
                         ))
                         break
 
+                # Snapshot Tool A's learned E[r] per category after this question
+                if is_bayesian:
+                    t = agent.reliability_table
+                    er = t[0, :, 0] / (t[0, :, 0] + t[0, :, 1])  # E[Beta] for tool 0
+                    seed_trace.append(er.copy())
+
+            if is_bayesian:
+                if agent_name not in reliability_traces:
+                    reliability_traces[agent_name] = []
+                reliability_traces[agent_name].append(np.array(seed_trace))
+
             result = BR(agent.name, seed, tuple(records),
                         total_reward - total_tool_cost, total_tool_cost, total_reward)
 
@@ -145,7 +164,7 @@ def run_drift_experiment(
 
         print(f"  Seed {seed} done", file=sys.stderr)
 
-    return results
+    return results, reliability_traces
 
 
 def before_after_table(results: dict[str, list[BenchmarkResult]]) -> str:
@@ -193,17 +212,61 @@ def save_drift_plots(results: dict[str, list[BenchmarkResult]], out_dir: Path) -
     plt.close(fig)
 
 
+def save_reliability_learning_curve(
+    reliability_traces: dict[str, list[np.ndarray]],
+    true_before: dict[str, float],
+    true_after: dict[str, float],
+    out_dir: Path,
+) -> None:
+    """Plot how the Bayesian agent's learned Tool A reliability evolves over questions."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for agent_name, traces in reliability_traces.items():
+        # traces: list of arrays, each (n_questions, n_categories)
+        all_traces = np.array(traces)  # (n_seeds, n_questions, n_categories)
+        mean_traces = all_traces.mean(axis=0)  # (n_questions, n_categories)
+        x = np.arange(1, mean_traces.shape[0] + 1)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for c_idx, cat in enumerate(CATEGORIES):
+            ax.plot(x, mean_traces[:, c_idx], label=cat, linewidth=2)
+            # Draw true values (before and after drift)
+            ax.hlines(true_before[cat], 1, DRIFT_POINT, colors=f"C{c_idx}",
+                      linestyles=":", alpha=0.4)
+            ax.hlines(true_after[cat], DRIFT_POINT, len(x), colors=f"C{c_idx}",
+                      linestyles=":", alpha=0.4)
+
+        ax.axvline(x=DRIFT_POINT, color="red", linestyle="--", alpha=0.7,
+                   label="Tool A degrades")
+        ax.set_xlabel("Question Number")
+        ax.set_ylabel("Learned E[reliability] for Tool A")
+        ax.set_title(f"Tool A Reliability Learning — {agent_name}")
+        ax.legend(fontsize=8, ncol=2)
+        ax.set_ylim(0, 1)
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(out_dir / f"reliability_curve_{agent_name}.png", dpi=150)
+        plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run drift benchmark experiment")
     parser.add_argument("--seeds", type=int, default=20, help="Number of seeds")
     args = parser.parse_args()
 
     print(f"Running drift experiment with {args.seeds} seeds...", file=sys.stderr)
-    results = run_drift_experiment(n_seeds=args.seeds)
+    results, reliability_traces = run_drift_experiment(n_seeds=args.seeds)
 
     out_dir = RESULTS_DIR / "drift"
     out_dir.mkdir(parents=True, exist_ok=True)
     save_drift_plots(results, out_dir)
+
+    # Reliability learning curve for Tool A
+    spec_tools = make_spec_tools()
+    degraded_a = make_degraded_tool_a(spec_tools[0])
+    true_before = spec_tools[0].reliability_by_category
+    true_after = degraded_a.reliability_by_category
+    save_reliability_learning_curve(reliability_traces, true_before, true_after, out_dir)
 
     print("\n" + before_after_table(results))
     print(f"\nPlots saved to {out_dir}/", file=sys.stderr)

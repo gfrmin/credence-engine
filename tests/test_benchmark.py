@@ -29,7 +29,7 @@ class _AlwaysSubmitZero:
     """Mock agent that always immediately submits candidate 0."""
     name = "always_submit_0"
 
-    def on_question_start(self, question_id, candidates, num_tools):
+    def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         pass
 
     def choose_action(self):
@@ -46,7 +46,7 @@ class _AlwaysAbstain:
     """Mock agent that always abstains."""
     name = "always_abstain"
 
-    def on_question_start(self, question_id, candidates, num_tools):
+    def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         pass
 
     def choose_action(self):
@@ -66,7 +66,7 @@ class _QueryThenSubmit:
     def __init__(self):
         self._queried = False
 
-    def on_question_start(self, question_id, candidates, num_tools):
+    def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         self._queried = False
 
     def choose_action(self):
@@ -89,7 +89,7 @@ class _DoubleQuerySameTool:
     def __init__(self):
         self._count = 0
 
-    def on_question_start(self, question_id, candidates, num_tools):
+    def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         self._count = 0
 
     def choose_action(self):
@@ -110,7 +110,7 @@ class _SnapshotAgent:
     def __init__(self):
         self._question_id = None
 
-    def on_question_start(self, question_id, candidates, num_tools):
+    def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         self._question_id = question_id
 
     def choose_action(self):

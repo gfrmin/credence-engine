@@ -36,6 +36,7 @@ class RandomAgent:
 
     def on_question_start(
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        question_text: str = "",
     ) -> None:
         self._candidates = candidates
         self._tool_responses = {}
@@ -90,6 +91,7 @@ class AllToolsAgent:
 
     def on_question_start(
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        question_text: str = "",
     ) -> None:
         self._candidates = candidates
         self._tool_responses = {}
@@ -173,6 +175,7 @@ class SingleBestToolAgent:
 
     def on_question_start(
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        question_text: str = "",
     ) -> None:
         self._candidates = candidates
         self._response = None

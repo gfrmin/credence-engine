@@ -67,13 +67,13 @@ def infer_category_prior(question_text: str) -> CategoryPosterior:
     weights = np.ones(NUM_CATEGORIES, dtype=np.float64)  # base weight 1 each
 
     if _NUMERICAL_PATTERN.search(question_text):
-        weights[CATEGORIES.index("numerical")] += 4.0
+        weights[CATEGORIES.index("numerical")] += 9.0
     if _RECENT_PATTERN.search(question_text):
-        weights[CATEGORIES.index("recent_events")] += 4.0
+        weights[CATEGORIES.index("recent_events")] += 9.0
     if _MISCONCEPTION_PATTERN.search(question_text):
-        weights[CATEGORIES.index("misconceptions")] += 4.0
+        weights[CATEGORIES.index("misconceptions")] += 9.0
     if _REASONING_PATTERN.search(question_text):
-        weights[CATEGORIES.index("reasoning")] += 4.0
+        weights[CATEGORIES.index("reasoning")] += 9.0
 
     # If nothing matched strongly, factual gets a mild boost (most common category)
     if weights.max() == 1.0:

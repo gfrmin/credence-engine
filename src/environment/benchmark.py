@@ -23,6 +23,7 @@ class Agent(Protocol):
 
     def on_question_start(
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        question_text: str = "",
     ) -> None: ...
 
     def choose_action(self) -> Action: ...
@@ -69,7 +70,8 @@ def run_benchmark(
     total_tool_cost = 0.0
 
     for question in questions:
-        agent.on_question_start(question.id, question.candidates, num_tools)
+        agent.on_question_start(question.id, question.candidates, num_tools,
+                                question_text=question.text)
 
         used_tools: list[int] = []
         tool_responses: dict[int, int | None] = {}
