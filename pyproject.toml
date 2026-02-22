@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "bayesian-tool-benchmark"
 version = "0.1.0"
 description = "Bayesian decision-theoretic tool agent vs LangChain ReAct benchmark"
+license = "AGPL-3.0-only"
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.24",

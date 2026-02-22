@@ -16,21 +16,39 @@ and when to abstain. The LangChain agent lets the LLM decide.
 
 ```bash
 # Install dependencies
-pip install -e .
+uv sync
 
-# Run the stationary benchmark
-python experiments/run_stationary.py
+# Run tests
+uv run pytest -v
 
-# Run with drift
-python experiments/run_drift.py
+# Run all experiments (stationary + drift + ablation)
+uv run python -m experiments.run_full_comparison
 
-# Run ablation studies
-python experiments/run_ablation.py
+# Or run individually
+uv run python -m experiments.run_stationary --seeds 20
+uv run python -m experiments.run_drift --seeds 20
+uv run python -m experiments.run_ablation --seeds 20
 ```
+
+LangChain agents require a local Ollama instance with `llama3.1` (default).
+Set `CREDENCE_LLM_PROVIDER=openai` or `CREDENCE_LLM_PROVIDER=anthropic` for API-based models.
 
 ## Key Results
 
-(To be populated after running experiments)
+| Agent | Score | Accuracy | Tools/Q |
+|---|---|---|---|
+| oracle | +188.2 | 70.6% | 1.08 |
+| **bayesian** | **+112.6** | **59.6%** | **0.99** |
+| langchain_react | -7.4 | 64.0% | 3.22 |
+| langchain_enhanced | -68.2 | 66.0% | 3.94 |
+
+The Bayesian agent outscores LangChain by 120 points despite lower accuracy —
+it queries ~1 tool per question instead of ~3.2, and strategically abstains on
+low-confidence questions. Enhanced prompting makes LangChain *worse* by triggering
+more tool calls without proportional accuracy gains.
+
+See [`results/RESULTS.md`](results/RESULTS.md) for full results across all three
+experiments (stationary, drift, ablation).
 
 ## Project Structure
 

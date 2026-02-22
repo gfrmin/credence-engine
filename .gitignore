@@ -4,6 +4,7 @@ __pycache__/
 .coverage
 .pytest_cache/
 .venv/
+.claude/
 
 # Generated experiment output (reproducible via experiments/)
 results/
