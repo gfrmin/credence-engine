@@ -1,4 +1,9 @@
-# SPEC.md — Bayesian Tool Agent Benchmark: Full Specification
+# SPEC.md — Credence: Specification
+
+> This document originated as the full specification for the benchmark and now also
+> serves as the mathematical reference for the library's inference layer (sections 3–4).
+> Benchmark-specific environment details (sections 2, 4–9) remain accurate as historical
+> context and as documentation for the included benchmark.
 
 ## 1. Overview
 
@@ -13,7 +18,7 @@ decision theory, not prompt engineering.
 
 ---
 
-## 2. The Environment
+## 2. The Benchmark Environment
 
 ### 2.1 Questions
 
@@ -354,7 +359,7 @@ The category posterior is updated throughout the question as tool responses arri
 
 ---
 
-## 4. The LangChain Agents
+## 4. The LangChain Agents (Benchmark)
 
 ### 4.1 LangChain ReAct (Standard)
 
@@ -422,7 +427,7 @@ the prompt. This gives the LLM maximum information to work with.
 
 ---
 
-## 5. Baseline Agents
+## 5. Baseline Agents (Benchmark)
 
 ### 5.1 Random Agent
 Queries a random tool, submits whatever it says. Lower bound.
@@ -441,7 +446,7 @@ Bayesian agent's advantage isn't just "it happens to pick the right tool."
 
 ---
 
-## 6. Metrics
+## 6. Metrics (Benchmark)
 
 ### 6.1 Primary
 
@@ -498,7 +503,7 @@ the moment of decision. Demonstrates the agent's reasoning.
 
 ---
 
-## 7. Experiments
+## 7. Experiments (Benchmark)
 
 ### 7.1 Experiment 1: Stationary (Primary)
 
@@ -556,7 +561,7 @@ This shows which components contribute most to the advantage.
 
 ---
 
-## 8. Implementation Notes
+## 8. Implementation Notes (Benchmark)
 
 ### 8.1 Reproducibility
 
@@ -592,7 +597,7 @@ This shows which components contribute most to the advantage.
 
 ---
 
-## 9. What Success Looks Like
+## 9. What Success Looks Like (Benchmark)
 
 The benchmark has succeeded if:
 

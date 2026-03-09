@@ -1,12 +1,15 @@
-# CLAUDE.md — Bayesian Tool Agent Benchmark
+# CLAUDE.md — Credence
 
 ## What This Project Is
 
-A head-to-head benchmark comparing a **Bayesian decision-theoretic agent** against
-a **LangChain ReAct agent** on a multi-tool question-answering task.
+**Credence** is a reusable Bayesian decision-theoretic agent library and an empirical
+benchmark demonstrating that decision theory outperforms prompt engineering for
+tool-using agents.
 
-The thesis: current LLM "agents" are expensive flowcharts with no uncertainty model,
-no principled tool selection, and no adaptation. We demonstrate this empirically.
+The library provides domain-agnostic Bayesian agents: categories, tools, scoring rules,
+and category inference are all injected — the agent and inference layer have no hardcoded
+domain knowledge. The benchmark instantiates this library for a multi-tool QA task and
+compares against LangChain ReAct agents.
 
 ---
 
@@ -58,63 +61,82 @@ Every parameter in the Bayesian agent must be justified:
 
 ## Architecture Overview
 
+The project has a dual structure: a domain-agnostic library (`credence/` facade + `src/inference/` + `src/agents/`) and a benchmark-specific environment (`src/environment/`).
+
 ```
-bayesian-tool-benchmark/
-├── CLAUDE.md                    # This file
-├── SPEC.md                      # Detailed specification
-├── README.md                    # Project overview and results
+credence/
+├── credence/                    # Facade package — public API re-exports
+│   └── __init__.py              # BayesianAgent, ToolConfig, ScoringRule, etc.
 ├── src/
-│   ├── environment/
+│   ├── inference/               # Domain-agnostic inference layer
+│   │   ├── beta_posterior.py    # Beta-Bernoulli reliability tracking
+│   │   ├── voi.py               # Value of information, ScoringRule, ToolConfig
+│   │   └── decision.py          # EU-based decision logic
+│   ├── agents/
+│   │   ├── bayesian_agent.py    # Domain-agnostic Bayesian agent
+│   │   ├── common.py            # Shared agent interface (AgentResult, DecisionStep)
+│   │   ├── baselines.py         # Random, all-tools, oracle agents
+│   │   ├── langchain_agent.py   # Standard LangChain ReAct agent
+│   │   └── langchain_enhanced.py # LangChain with best-effort prompting
+│   ├── environment/             # Benchmark-specific
 │   │   ├── benchmark.py         # The benchmark harness
 │   │   ├── tools.py             # Simulated tools with known reliability
-│   │   └── questions.py         # Question bank with ground truth
-│   ├── agents/
-│   │   ├── bayesian_agent.py    # The Bayesian decision-theoretic agent
-│   │   ├── langchain_agent.py   # Standard LangChain ReAct agent
-│   │   ├── langchain_enhanced.py # LangChain with best-effort prompting
-│   │   ├── baselines.py         # Random, all-tools, oracle agents
-│   │   └── common.py            # Shared agent interface
-│   ├── inference/
-│   │   ├── beta_posterior.py    # Beta-Bernoulli reliability tracking
-│   │   ├── voi.py               # Value of information calculations
-│   │   └── decision.py          # EU-based decision logic
+│   │   ├── questions.py         # Question bank with ground truth
+│   │   └── categories.py        # CATEGORIES tuple, make_keyword_category_infer_fn()
 │   ├── analysis/
 │   │   ├── metrics.py           # Score, calibration, cost metrics
 │   │   └── visualisation.py     # Plots and dashboards
 │   └── utils/
 │       └── logging.py           # Structured logging for analysis
 ├── tests/
-│   ├── test_beta_posterior.py
-│   ├── test_voi.py
-│   ├── test_decision.py
-│   ├── test_tools.py
-│   └── test_benchmark.py
 ├── experiments/
 │   ├── run_stationary.py        # Main experiment: stationary reliabilities
 │   ├── run_drift.py             # Extension: tool reliability drift
 │   └── run_ablation.py          # Ablation studies
 ├── results/                     # Generated plots and data
-└── pyproject.toml
+└── pyproject.toml               # Core deps vs [benchmark] vs [dev] extras
 ```
+
+### Decoupled Architecture
+
+The `BayesianAgent` constructor accepts injected domain knowledge:
+
+```python
+BayesianAgent(
+    tool_configs: list[ToolConfig],        # Tool names and costs
+    categories: tuple[str, ...] | None,    # Domain categories (injected)
+    category_infer_fn: Callable | None,    # Question text → category prior (injected)
+    forgetting: float = 1.0,               # Exponential forgetting rate
+)
+```
+
+The inference layer (`beta_posterior.py`, `voi.py`, `decision.py`) works with integer
+indices for tools and categories — no domain strings. `ScoringRule` and `ToolConfig`
+are the only configuration types needed to parameterise the entire decision loop.
+
+`make_keyword_category_infer_fn()` in `categories.py` is a convenience for the benchmark;
+custom domains provide their own `category_infer_fn`.
 
 ---
 
 ## Common Mistakes to Avoid
 
-### WRONG: Adding heuristic tool routing
+### WRONG: Hardcoding domain knowledge in the agent
 ```python
-# BAD — hardcoded routing
+# BAD — domain-specific routing inside the agent
 if question.looks_numerical():
     tool = "calculator"
 ```
 
-### RIGHT: Learn tool-category reliability from data
+### RIGHT: Inject domain knowledge, decide via EU
 ```python
-# GOOD — tool selection via EU maximisation
-best_action = argmax(
-    [eu_query(tool, beliefs) for tool in unused_tools] +
-    [eu_submit(best_answer, beliefs), eu_abstain()]
+# GOOD — domain categories and inference injected at construction
+agent = BayesianAgent(
+    tool_configs=tool_configs,
+    categories=("factual", "numerical", "recent", "misconception", "reasoning"),
+    category_infer_fn=my_category_infer_fn,
 )
+# Tool selection happens via EU maximisation inside select_action()
 ```
 
 ### WRONG: Treating LLM classification as certain
@@ -185,3 +207,4 @@ agent = initialize_agent(
 - Tool costs are subtracted from EU(query), not from score retrospectively
 - Ground truth for reliability updates: ONLY from final answer feedback
 - The Bayesian agent never "peeks" at true tool reliability
+- The agent and inference layer contain NO domain-specific constants
