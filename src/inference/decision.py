@@ -23,11 +23,14 @@ from src.inference.beta_posterior import (
     update_reliability_table,
 )
 from src.inference.voi import (
+    ScoringRule,
     ToolConfig,
     compute_voi,
     eu_abstain,
     eu_submit,
 )
+
+_DEFAULT_SCORING = ScoringRule()
 
 
 class ActionType(Enum):
@@ -50,10 +53,13 @@ class QuestionState(NamedTuple):
     tool_responses: dict[int, int | None]  # tool_idx -> response (int or None)
 
 
-def initial_question_state(category_posterior: CategoryPosterior) -> QuestionState:
+def initial_question_state(
+    category_posterior: CategoryPosterior,
+    n_candidates: int = 4,
+) -> QuestionState:
     """Fresh state for a new question: uniform answer prior, no tools used."""
     return QuestionState(
-        answer_posterior=uniform_answer_prior(),
+        answer_posterior=uniform_answer_prior(n_candidates),
         category_posterior=category_posterior.copy(),
         used_tools=frozenset(),
         tool_responses={},
@@ -64,6 +70,7 @@ def select_action(
     state: QuestionState,
     reliability_table: ReliabilityTable,
     tool_configs: list[ToolConfig],
+    scoring: ScoringRule = _DEFAULT_SCORING,
 ) -> Action:
     """Choose the action that maximises expected utility.
 
@@ -71,8 +78,8 @@ def select_action(
     Tie-breaking: submit > abstain > query (no exploration bonus).
     """
     best_answer_idx = int(np.argmax(state.answer_posterior))
-    eu_sub = eu_submit(state.answer_posterior)
-    eu_abs = eu_abstain()
+    eu_sub = eu_submit(state.answer_posterior, scoring)
+    eu_abs = eu_abstain(scoring)
 
     best_action = Action(ActionType.SUBMIT, answer_idx=best_answer_idx, eu=eu_sub)
     # Tie-break: submit > abstain (use tolerance for floating-point ties)
@@ -88,6 +95,7 @@ def select_action(
             tool_idx,
             state.category_posterior,
             config,
+            scoring,
         )
         net_eu = voi - config.cost
         if net_eu > best_action.eu:

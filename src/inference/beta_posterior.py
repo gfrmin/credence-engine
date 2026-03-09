@@ -11,30 +11,24 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-# --- Constants ---
-
-NUM_CANDIDATES = 4
-NUM_CATEGORIES = 5
-CATEGORIES = ("factual", "numerical", "recent_events", "misconceptions", "reasoning")
-
 # --- Type aliases ---
 
-AnswerPosterior = NDArray[np.float64]     # shape (4,), sums to 1
-CategoryPosterior = NDArray[np.float64]   # shape (5,), sums to 1
-ReliabilityTable = NDArray[np.float64]    # shape (num_tools, 5, 2); last dim = (alpha, beta)
+AnswerPosterior = NDArray[np.float64]     # shape (n,), sums to 1
+CategoryPosterior = NDArray[np.float64]   # shape (num_categories,), sums to 1
+ReliabilityTable = NDArray[np.float64]    # shape (num_tools, num_categories, 2); last dim = (alpha, beta)
 
 _EPSILON = 1e-10
 
 
-def uniform_answer_prior() -> AnswerPosterior:
-    return np.full(NUM_CANDIDATES, 1.0 / NUM_CANDIDATES)
+def uniform_answer_prior(n: int = 4) -> AnswerPosterior:
+    return np.full(n, 1.0 / n)
 
 
-def uniform_category_prior() -> CategoryPosterior:
-    return np.full(NUM_CATEGORIES, 1.0 / NUM_CATEGORIES)
+def uniform_category_prior(n: int = 5) -> CategoryPosterior:
+    return np.full(n, 1.0 / n)
 
 
-def make_reliability_table(num_tools: int, num_categories: int = NUM_CATEGORIES) -> ReliabilityTable:
+def make_reliability_table(num_tools: int, num_categories: int = 5) -> ReliabilityTable:
     """All Beta(1,1) — uniform, genuinely uninformative."""
     return np.ones((num_tools, num_categories, 2), dtype=np.float64)
 

@@ -15,7 +15,7 @@ from src.environment.tools import (
     query_tool,
     tool_config_for,
 )
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 
 
 # --- Fixtures ---

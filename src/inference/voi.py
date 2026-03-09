@@ -13,7 +13,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.inference.beta_posterior import (
-    NUM_CANDIDATES,
     AnswerPosterior,
     CategoryPosterior,
     ReliabilityTable,
@@ -22,11 +21,21 @@ from src.inference.beta_posterior import (
     update_category_posterior_on_response,
 )
 
-# --- Scoring constants (from SPEC.md §2.3) ---
+# --- Scoring ---
 
-REWARD_CORRECT = 10.0
-PENALTY_WRONG = -5.0
-REWARD_ABSTAIN = 0.0
+
+class ScoringRule(NamedTuple):
+    reward_correct: float = 10.0
+    penalty_wrong: float = -5.0
+    reward_abstain: float = 0.0
+
+
+_DEFAULT_SCORING = ScoringRule()
+
+# Backward-compatible module-level constants
+REWARD_CORRECT = _DEFAULT_SCORING.reward_correct
+PENALTY_WRONG = _DEFAULT_SCORING.penalty_wrong
+REWARD_ABSTAIN = _DEFAULT_SCORING.reward_abstain
 
 
 class ToolConfig(NamedTuple):
@@ -34,23 +43,29 @@ class ToolConfig(NamedTuple):
     coverage_by_category: NDArray[np.float64]  # shape (num_categories,)
 
 
-def eu_submit(answer_posterior: AnswerPosterior) -> float:
+def eu_submit(
+    answer_posterior: AnswerPosterior,
+    scoring: ScoringRule = _DEFAULT_SCORING,
+) -> float:
     """EU of submitting the best answer.
 
-    EU = p_best * REWARD_CORRECT + (1 - p_best) * PENALTY_WRONG
+    EU = p_best * reward_correct + (1 - p_best) * penalty_wrong
     """
     p_best = float(np.max(answer_posterior))
-    return p_best * REWARD_CORRECT + (1.0 - p_best) * PENALTY_WRONG
+    return p_best * scoring.reward_correct + (1.0 - p_best) * scoring.penalty_wrong
 
 
-def eu_abstain() -> float:
-    """EU of abstaining. Always 0."""
-    return REWARD_ABSTAIN
+def eu_abstain(scoring: ScoringRule = _DEFAULT_SCORING) -> float:
+    """EU of abstaining."""
+    return scoring.reward_abstain
 
 
-def eu_star(answer_posterior: AnswerPosterior) -> float:
+def eu_star(
+    answer_posterior: AnswerPosterior,
+    scoring: ScoringRule = _DEFAULT_SCORING,
+) -> float:
     """Best achievable EU given current beliefs: max(eu_submit, eu_abstain)."""
-    return max(eu_submit(answer_posterior), eu_abstain())
+    return max(eu_submit(answer_posterior, scoring), eu_abstain(scoring))
 
 
 def compute_voi(
@@ -59,6 +74,7 @@ def compute_voi(
     tool_idx: int,
     category_posterior: CategoryPosterior,
     tool_config: ToolConfig,
+    scoring: ScoringRule = _DEFAULT_SCORING,
 ) -> float:
     """Exact Value of Information for querying a tool.
 
@@ -74,12 +90,13 @@ def compute_voi(
       - Tool B (partial coverage): no-answer branch preserves current EU.
       - Tool C (binary coverage): answer branch only fires for P(numerical).
     """
-    eu_current = eu_star(answer_posterior)
+    eu_current = eu_star(answer_posterior, scoring)
     coverage = tool_config.coverage_by_category
 
     # P(tool returns an answer) = sum_c P(c) * coverage[c]
     p_covered = float(np.dot(category_posterior, coverage))
 
+    n = len(answer_posterior)
     expected_eu = 0.0
 
     if p_covered > 0:
@@ -91,16 +108,16 @@ def compute_voi(
         r_eff = effective_reliability(reliability_table, tool_idx, cat_given_answer)
 
         # Enumerate possible responses
-        wrong_lik = (1.0 - r_eff) / (NUM_CANDIDATES - 1)
-        for j in range(NUM_CANDIDATES):
+        wrong_lik = (1.0 - r_eff) / (n - 1)
+        for j in range(n):
             # P(response=j | answer) = sum_i P(x_i) * L(j | x_i, r_eff)
             lik_j = np.where(
-                np.arange(NUM_CANDIDATES) == j, r_eff, wrong_lik,
+                np.arange(n) == j, r_eff, wrong_lik,
             )
             p_resp_j = float(np.dot(answer_posterior, lik_j))
             if p_resp_j > 1e-15:
                 post_j = update_answer_posterior(answer_posterior, j, r_eff)
-                expected_eu += p_covered * p_resp_j * eu_star(post_j)
+                expected_eu += p_covered * p_resp_j * eu_star(post_j, scoring)
 
     # --- No-answer branch: answer posterior unchanged ---
     expected_eu += (1.0 - p_covered) * eu_current

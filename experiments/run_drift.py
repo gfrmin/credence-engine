@@ -27,7 +27,7 @@ from src.agents.bayesian_agent import BayesianAgent
 from src.environment.benchmark import BenchmarkResult
 from src.environment.questions import get_questions
 from src.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 
 
 RESULTS_DIR = Path("results")

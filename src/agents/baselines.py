@@ -12,7 +12,8 @@ from collections import Counter
 import numpy as np
 
 from src.agents.common import DecisionStep
-from src.inference.beta_posterior import CATEGORIES, make_reliability_table
+from src.environment.categories import CATEGORIES
+from src.inference.beta_posterior import make_reliability_table
 from src.inference.decision import Action, ActionType, select_action
 from src.inference.voi import ToolConfig, eu_abstain, eu_submit, compute_voi
 from src.environment.tools import SimulatedTool, tool_config_for

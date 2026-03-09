@@ -12,9 +12,8 @@ import re
 import numpy as np
 
 from src.agents.common import AgentResult, DecisionStep
+from src.environment.categories import CATEGORIES, NUM_CATEGORIES
 from src.inference.beta_posterior import (
-    CATEGORIES,
-    NUM_CATEGORIES,
     CategoryPosterior,
     ReliabilityTable,
     make_reliability_table,

@@ -16,7 +16,8 @@ import numpy as np
 import pytest
 
 from src.agents.bayesian_agent import BayesianAgent, infer_category_prior
-from src.inference.beta_posterior import CATEGORIES, make_reliability_table
+from src.environment.categories import CATEGORIES
+from src.inference.beta_posterior import make_reliability_table
 from src.inference.voi import ToolConfig
 from src.environment.tools import make_spec_tools, tool_config_for
 from src.environment.questions import Question, get_questions

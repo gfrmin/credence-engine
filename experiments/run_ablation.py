@@ -23,7 +23,7 @@ from src.analysis.visualisation import score_comparison_bar, tool_calls_comparis
 from src.environment.benchmark import BenchmarkResult, run_benchmark
 from src.environment.questions import get_questions
 from src.environment.tools import make_spec_tools, tool_config_for
-from src.inference.beta_posterior import NUM_CATEGORIES
+from src.environment.categories import NUM_CATEGORIES
 from src.inference.decision import Action, ActionType
 
 

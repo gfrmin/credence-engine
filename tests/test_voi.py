@@ -5,12 +5,13 @@ import pytest
 from numpy.testing import assert_allclose
 
 from src.inference.beta_posterior import (
-    NUM_CANDIDATES,
-    NUM_CATEGORIES,
     make_reliability_table,
     uniform_answer_prior,
     uniform_category_prior,
 )
+
+NUM_CANDIDATES = 4
+NUM_CATEGORIES = 5
 from src.inference.voi import (
     PENALTY_WRONG,
     REWARD_ABSTAIN,

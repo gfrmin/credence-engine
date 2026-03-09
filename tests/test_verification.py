@@ -9,8 +9,6 @@ import pytest
 from numpy.testing import assert_allclose
 
 from src.inference.beta_posterior import (
-    NUM_CANDIDATES,
-    NUM_CATEGORIES,
     effective_reliability,
     expected_reliability,
     make_reliability_table,
@@ -20,6 +18,9 @@ from src.inference.beta_posterior import (
     update_category_posterior_on_response,
     update_reliability_table,
 )
+
+NUM_CANDIDATES = 4
+NUM_CATEGORIES = 5
 from src.inference.decision import (
     ActionType,
     QuestionState,

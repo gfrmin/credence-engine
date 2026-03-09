@@ -14,7 +14,7 @@ import numpy as np
 import seaborn as sns
 
 from src.environment.benchmark import BenchmarkResult
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 
 
 def set_publication_style() -> None:

@@ -1,9 +1,6 @@
 """Inference layer: Beta-Bernoulli posteriors, VOI, and EU-based decisions."""
 
 from src.inference.beta_posterior import (
-    NUM_CANDIDATES,
-    NUM_CATEGORIES,
-    CATEGORIES,
     AnswerPosterior,
     CategoryPosterior,
     ReliabilityTable,
@@ -17,6 +14,7 @@ from src.inference.beta_posterior import (
     update_reliability_table,
 )
 from src.inference.voi import (
+    ScoringRule,
     REWARD_CORRECT,
     PENALTY_WRONG,
     REWARD_ABSTAIN,
@@ -38,9 +36,6 @@ from src.inference.decision import (
 )
 
 __all__ = [
-    "NUM_CANDIDATES",
-    "NUM_CATEGORIES",
-    "CATEGORIES",
     "AnswerPosterior",
     "CategoryPosterior",
     "ReliabilityTable",
@@ -52,6 +47,7 @@ __all__ = [
     "update_category_posterior_on_response",
     "update_answer_posterior",
     "update_reliability_table",
+    "ScoringRule",
     "REWARD_CORRECT",
     "PENALTY_WRONG",
     "REWARD_ABSTAIN",

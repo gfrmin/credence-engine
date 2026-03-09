@@ -7,7 +7,7 @@ from collections import Counter
 import pytest
 
 from src.environment.questions import QUESTION_BANK, Question, get_questions
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 
 
 class TestQuestionCount:

@@ -12,7 +12,7 @@ import numpy as np
 
 from src.environment.benchmark import BenchmarkResult
 from src.environment.tools import SimulatedTool
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 
 
 def total_score(result: BenchmarkResult) -> float:

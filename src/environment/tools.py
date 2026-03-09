@@ -11,7 +11,7 @@ from typing import NamedTuple
 
 import numpy as np
 
-from src.inference.beta_posterior import CATEGORIES
+from src.environment.categories import CATEGORIES
 from src.inference.voi import ToolConfig
 
 
