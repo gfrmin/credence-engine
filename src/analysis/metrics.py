@@ -12,7 +12,6 @@ import numpy as np
 
 from src.environment.benchmark import BenchmarkResult
 from src.environment.tools import SimulatedTool
-from src.environment.categories import CATEGORIES
 
 
 def total_score(result: BenchmarkResult) -> float:
@@ -102,7 +101,9 @@ def expected_calibration_error(
 
 
 def learned_vs_true_reliability(
-    agent, true_tools: list[SimulatedTool],
+    agent,
+    true_tools: list[SimulatedTool],
+    categories: tuple[str, ...] = ("factual", "numerical", "recent_events", "misconceptions", "reasoning"),
 ) -> dict[str, dict[str, tuple[float, float]]]:
     """Compare agent's learned Beta means to true tool reliabilities.
 
@@ -111,7 +112,7 @@ def learned_vs_true_reliability(
     result = {}
     for t_idx, tool in enumerate(true_tools):
         tool_result = {}
-        for c_idx, cat in enumerate(CATEGORIES):
+        for c_idx, cat in enumerate(categories):
             alpha = agent.reliability_table[t_idx, c_idx, 0]
             beta = agent.reliability_table[t_idx, c_idx, 1]
             learned = alpha / (alpha + beta)

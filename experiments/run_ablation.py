@@ -17,13 +17,13 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from src.agents.bayesian_agent import BayesianAgent, infer_category_prior
+from src.agents.bayesian_agent import BayesianAgent
 from src.analysis.metrics import accuracy, total_score, tool_calls_per_question
 from src.analysis.visualisation import score_comparison_bar, tool_calls_comparison
 from src.environment.benchmark import BenchmarkResult, run_benchmark
+from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 from src.environment.questions import get_questions
 from src.environment.tools import make_spec_tools, tool_config_for
-from src.environment.categories import NUM_CATEGORIES
 from src.inference.decision import Action, ActionType
 
 
@@ -35,8 +35,8 @@ RESULTS_DIR = Path("results")
 class NoVOIAgent(BayesianAgent):
     """Always queries cheapest applicable tool instead of using VOI."""
 
-    def __init__(self, tool_configs, name="no_voi"):
-        super().__init__(tool_configs=tool_configs, name=name)
+    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_voi"):
+        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
 
     def choose_action(self) -> Action:
         assert self._state is not None
@@ -69,13 +69,13 @@ class NoVOIAgent(BayesianAgent):
 class NoCategoryAgent(BayesianAgent):
     """Treats all categories as identical (uniform category prior, never updated)."""
 
-    def __init__(self, tool_configs, name="no_category"):
-        super().__init__(tool_configs=tool_configs, name=name)
+    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_category"):
+        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
 
     def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         # Force uniform category prior regardless of question text
         from src.inference.decision import initial_question_state
-        uniform = np.full(NUM_CATEGORIES, 1.0 / NUM_CATEGORIES)
+        uniform = np.full(self._num_categories, 1.0 / self._num_categories)
         self._state = initial_question_state(uniform)
         self._trace = []
         self._step = 0
@@ -85,8 +85,8 @@ class NoCategoryAgent(BayesianAgent):
 class NoAbstentionAgent(BayesianAgent):
     """Must always submit — abstention disabled."""
 
-    def __init__(self, tool_configs, name="no_abstention"):
-        super().__init__(tool_configs=tool_configs, name=name)
+    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_abstention"):
+        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
 
     def choose_action(self) -> Action:
         action = super().choose_action()
@@ -99,8 +99,8 @@ class NoAbstentionAgent(BayesianAgent):
 class FixedReliabilityAgent(BayesianAgent):
     """No learning — uses prior reliability throughout."""
 
-    def __init__(self, tool_configs, name="fixed_reliability"):
-        super().__init__(tool_configs=tool_configs, name=name)
+    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="fixed_reliability"):
+        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
 
     def on_question_end(self, was_correct):
         # Skip reliability update
@@ -110,8 +110,8 @@ class FixedReliabilityAgent(BayesianAgent):
 class SingleToolAgent(BayesianAgent):
     """Only queries one tool per question — no cross-verification."""
 
-    def __init__(self, tool_configs, name="no_crossverify"):
-        super().__init__(tool_configs=tool_configs, name=name)
+    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_crossverify"):
+        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
         self._queried_this_q = False
 
     def on_question_start(self, question_id, candidates, num_tools, question_text=""):
@@ -136,13 +136,14 @@ class SingleToolAgent(BayesianAgent):
 
 def make_ablation_agents(tool_configs):
     """Create all ablation variants."""
+    _infer_fn = make_keyword_category_infer_fn()
     return [
-        ("full_agent", lambda: BayesianAgent(tool_configs=tool_configs, name="full_agent")),
-        ("no_voi", lambda: NoVOIAgent(tool_configs=tool_configs)),
-        ("no_category", lambda: NoCategoryAgent(tool_configs=tool_configs)),
-        ("no_abstention", lambda: NoAbstentionAgent(tool_configs=tool_configs)),
-        ("fixed_reliability", lambda: FixedReliabilityAgent(tool_configs=tool_configs)),
-        ("no_crossverify", lambda: SingleToolAgent(tool_configs=tool_configs)),
+        ("full_agent", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="full_agent")),
+        ("no_voi", lambda: NoVOIAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("no_category", lambda: NoCategoryAgent(tool_configs=tool_configs, categories=CATEGORIES)),
+        ("no_abstention", lambda: NoAbstentionAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("fixed_reliability", lambda: FixedReliabilityAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("no_crossverify", lambda: SingleToolAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
     ]
 
 

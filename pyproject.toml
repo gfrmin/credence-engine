@@ -3,28 +3,33 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bayesian-tool-benchmark"
+name = "credence"
 version = "0.1.0"
-description = "Bayesian decision-theoretic tool agent vs LangChain ReAct benchmark"
+description = "Bayesian decision-theoretic agents — LangChain but actually intelligent"
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+benchmark = [
     "matplotlib>=3.7",
     "seaborn>=0.12",
     "langchain>=0.2",
     "langchain-openai>=0.1",
     "langchain-anthropic>=0.1",
-    "pytest>=7.4",
     "langchain-ollama>=1.0.1",
 ]
-
-[project.optional-dependencies]
 dev = [
+    "pytest>=7.4",
     "pytest-cov",
     "ruff",
 ]
+
+[tool.setuptools.packages.find]
+include = ["credence*", "src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

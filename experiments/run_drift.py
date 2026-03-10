@@ -27,7 +27,7 @@ from src.agents.bayesian_agent import BayesianAgent
 from src.environment.benchmark import BenchmarkResult
 from src.environment.questions import get_questions
 from src.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
-from src.environment.categories import CATEGORIES
+from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 
 
 RESULTS_DIR = Path("results")
@@ -55,11 +55,12 @@ def run_drift_experiment(
     tool_configs = [tool_config_for(t) for t in spec_tools]
     degraded_a = make_degraded_tool_a(spec_tools[0])
 
+    _infer_fn = make_keyword_category_infer_fn()
     agent_factories = [
-        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs)),
-        ("bayesian_forget", lambda: BayesianAgent(tool_configs=tool_configs, forgetting=0.95,
+        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
+        ("bayesian_forget", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=0.95,
                                                    name="bayesian_forget")),
-        ("bayesian_no_forget", lambda: BayesianAgent(tool_configs=tool_configs, forgetting=1.0,
+        ("bayesian_no_forget", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=1.0,
                                                       name="bayesian_no_forget")),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),

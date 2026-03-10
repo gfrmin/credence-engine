@@ -12,14 +12,12 @@ from collections import Counter
 import numpy as np
 
 from src.agents.common import DecisionStep
-from src.environment.categories import CATEGORIES
-from src.inference.beta_posterior import make_reliability_table
-from src.inference.decision import Action, ActionType, select_action
-from src.inference.voi import ToolConfig, eu_abstain, eu_submit, compute_voi
-from src.environment.tools import SimulatedTool, tool_config_for
+from src.inference.decision import Action, ActionType
+from src.inference.voi import ToolConfig
+from src.environment.tools import SimulatedTool
 
 # Reuse BayesianAgent's full decision machinery for the oracle
-from src.agents.bayesian_agent import BayesianAgent, infer_category_prior
+from src.agents.bayesian_agent import BayesianAgent
 
 
 class RandomAgent:
@@ -145,14 +143,15 @@ class OracleAgent(BayesianAgent):
         self,
         tools: list[SimulatedTool],
         tool_configs: list[ToolConfig],
+        category_names: tuple[str, ...] = ("factual", "numerical", "recent_events", "misconceptions", "reasoning"),
         name: str = "oracle",
     ):
-        super().__init__(tool_configs=tool_configs, name=name)
+        super().__init__(tool_configs=tool_configs, categories=category_names, name=name)
         # Set reliability table to true values with strong pseudo-counts
         # Beta(100*r, 100*(1-r)) has mean r and tight concentration
         n_pseudo = 100.0
         for t_idx, tool in enumerate(tools):
-            for c_idx, cat in enumerate(CATEGORIES):
+            for c_idx, cat in enumerate(category_names):
                 r = tool.reliability_by_category.get(cat, 0.0)
                 self.reliability_table[t_idx, c_idx, 0] = max(0.01, n_pseudo * r)
                 self.reliability_table[t_idx, c_idx, 1] = max(0.01, n_pseudo * (1.0 - r))

@@ -14,7 +14,7 @@ import numpy as np
 import seaborn as sns
 
 from src.environment.benchmark import BenchmarkResult
-from src.environment.categories import CATEGORIES
+from src.environment.categories import CATEGORIES as _DEFAULT_CATEGORIES
 
 
 def set_publication_style() -> None:
@@ -78,6 +78,7 @@ def cumulative_score_plot(
 def tool_selection_heatmap(
     results: dict[str, list[BenchmarkResult]],
     tool_names: tuple[str, ...] = ("quick_search", "knowledge_base", "calculator", "llm_direct"),
+    categories: tuple[str, ...] = _DEFAULT_CATEGORIES,
 ) -> plt.Figure:
     """Heatmap: fraction of times each tool was queried per category, per agent."""
     agents = list(results.keys())
@@ -87,12 +88,12 @@ def tool_selection_heatmap(
     for i, agent_name in enumerate(agents):
         ax = axes[0, i]
         # Count tool queries per category
-        counts = np.zeros((len(CATEGORIES), len(tool_names)))
-        cat_totals = np.zeros(len(CATEGORIES))
+        counts = np.zeros((len(categories), len(tool_names)))
+        cat_totals = np.zeros(len(categories))
 
         for result in results[agent_name]:
             for rec in result.records:
-                c_idx = CATEGORIES.index(rec.category) if rec.category in CATEGORIES else -1
+                c_idx = categories.index(rec.category) if rec.category in categories else -1
                 if c_idx < 0:
                     continue
                 cat_totals[c_idx] += 1
@@ -108,7 +109,7 @@ def tool_selection_heatmap(
         sns.heatmap(
             fractions, ax=ax, annot=True, fmt=".2f", cmap="YlOrRd",
             xticklabels=[t.split("_")[0] for t in tool_names],
-            yticklabels=list(CATEGORIES),
+            yticklabels=list(categories),
             vmin=0, vmax=1,
         )
         ax.set_title(agent_name)

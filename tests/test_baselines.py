@@ -18,6 +18,7 @@ from src.agents.baselines import (
 from src.agents.bayesian_agent import BayesianAgent
 from src.agents.common import DecisionStep
 from src.environment.benchmark import run_benchmark
+from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 from src.environment.questions import Question, get_questions
 from src.environment.tools import make_spec_tools, tool_config_for
 
@@ -173,7 +174,7 @@ class TestScoreOrdering:
     def test_oracle_beats_bayesian(self, spec_tools, tool_configs, questions_50):
         """Oracle (perfect info) should score >= Bayesian (learned info)."""
         oracle = OracleAgent(tools=list(spec_tools), tool_configs=tool_configs)
-        bayesian = BayesianAgent(tool_configs=tool_configs)
+        bayesian = BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=make_keyword_category_infer_fn())
 
         r_oracle = run_benchmark(oracle, spec_tools, questions_50, seed=42)
         r_bayesian = run_benchmark(bayesian, spec_tools, questions_50, seed=42)

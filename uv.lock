@@ -52,44 +52,6 @@ wheels = [
 ]
 
 [[package]]
-name = "bayesian-tool-benchmark"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "langchain" },
-    { name = "langchain-anthropic" },
-    { name = "langchain-ollama" },
-    { name = "langchain-openai" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pytest" },
-    { name = "scipy" },
-    { name = "seaborn" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "langchain", specifier = ">=0.2" },
-    { name = "langchain-anthropic", specifier = ">=0.1" },
-    { name = "langchain-ollama", specifier = ">=1.0.1" },
-    { name = "langchain-openai", specifier = ">=0.1" },
-    { name = "matplotlib", specifier = ">=3.7" },
-    { name = "numpy", specifier = ">=1.24" },
-    { name = "pytest", specifier = ">=7.4" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'dev'" },
-    { name = "scipy", specifier = ">=1.11" },
-    { name = "seaborn", specifier = ">=0.12" },
-]
-provides-extras = ["dev"]
-
-[[package]]
 name = "certifi"
 version = "2026.1.4"
 source = { registry = "https://pypi.org/simple" }
@@ -365,6 +327,46 @@ wheels = [
 toml = [
     { name = "tomli", marker = "python_full_version <= '3.11'" },
 ]
+
+[[package]]
+name = "credence"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+
+[package.optional-dependencies]
+benchmark = [
+    { name = "langchain" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-ollama" },
+    { name = "langchain-openai" },
+    { name = "matplotlib" },
+    { name = "seaborn" },
+]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain", marker = "extra == 'benchmark'", specifier = ">=0.2" },
+    { name = "langchain-anthropic", marker = "extra == 'benchmark'", specifier = ">=0.1" },
+    { name = "langchain-ollama", marker = "extra == 'benchmark'", specifier = ">=1.0.1" },
+    { name = "langchain-openai", marker = "extra == 'benchmark'", specifier = ">=0.1" },
+    { name = "matplotlib", marker = "extra == 'benchmark'", specifier = ">=3.7" },
+    { name = "numpy", specifier = ">=1.24" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "ruff", marker = "extra == 'dev'" },
+    { name = "scipy", specifier = ">=1.11" },
+    { name = "seaborn", marker = "extra == 'benchmark'", specifier = ">=0.12" },
+]
+provides-extras = ["benchmark", "dev"]
 
 [[package]]
 name = "cycler"

@@ -42,6 +42,7 @@ from src.analysis.visualisation import (
     tool_selection_heatmap,
 )
 from src.environment.benchmark import BenchmarkResult, run_benchmark
+from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 from src.environment.questions import get_questions
 from src.environment.tools import make_spec_tools, tool_config_for
 
@@ -51,9 +52,10 @@ RESULTS_DIR = Path("results")
 
 def make_agents(spec_tools, tool_configs, include_langchain: bool = False):
     """Create all agents to benchmark. Returns list of (name, factory_fn) pairs."""
+    _infer_fn = make_keyword_category_infer_fn()
     agents = [
-        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs)),
-        ("bayesian", lambda: BayesianAgent(tool_configs=tool_configs)),
+        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
+        ("bayesian", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("all_tools", lambda: AllToolsAgent(num_tools=4)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),

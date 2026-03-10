@@ -15,13 +15,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.agents.bayesian_agent import BayesianAgent, infer_category_prior
-from src.environment.categories import CATEGORIES
+from src.agents.bayesian_agent import BayesianAgent
+from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 from src.inference.beta_posterior import make_reliability_table
 from src.inference.voi import ToolConfig
 from src.environment.tools import make_spec_tools, tool_config_for
 from src.environment.questions import Question, get_questions
 from src.environment.benchmark import run_benchmark
+
+_infer_category_prior = make_keyword_category_infer_fn(CATEGORIES)
 
 
 # --- Helpers ---
@@ -31,6 +33,8 @@ def _spec_tool_configs() -> list[ToolConfig]:
 
 
 def _make_agent(**kwargs) -> BayesianAgent:
+    kwargs.setdefault("categories", CATEGORIES)
+    kwargs.setdefault("category_infer_fn", _infer_category_prior)
     return BayesianAgent(tool_configs=_spec_tool_configs(), **kwargs)
 
 
@@ -46,27 +50,27 @@ def _make_q(qid: str, category: str, correct: int = 0, text: str = "") -> Questi
 
 class TestCategoryInference:
     def test_numerical_keywords(self):
-        prior = infer_category_prior("What is 17% of 4,230?")
+        prior = _infer_category_prior("What is 17% of 4,230?")
         assert CATEGORIES[np.argmax(prior)] == "numerical"
 
     def test_recent_keywords(self):
-        prior = infer_category_prior("Who won the 2024 Nobel Prize?")
+        prior = _infer_category_prior("Who won the 2024 Nobel Prize?")
         assert CATEGORIES[np.argmax(prior)] == "recent_events"
 
     def test_misconception_keywords(self):
-        prior = infer_category_prior("Is it true that we only use 10 percent of the brain?")
+        prior = _infer_category_prior("Is it true that we only use 10 percent of the brain?")
         assert CATEGORIES[np.argmax(prior)] == "misconceptions"
 
     def test_reasoning_keywords(self):
-        prior = infer_category_prior("If all roses are flowers, can we conclude something?")
+        prior = _infer_category_prior("If all roses are flowers, can we conclude something?")
         assert CATEGORIES[np.argmax(prior)] == "reasoning"
 
     def test_factual_default(self):
-        prior = infer_category_prior("Which country has the largest coastline?")
+        prior = _infer_category_prior("Which country has the largest coastline?")
         assert CATEGORIES[np.argmax(prior)] == "factual"
 
     def test_returns_distribution(self):
-        prior = infer_category_prior("Some question")
+        prior = _infer_category_prior("Some question")
         assert abs(prior.sum() - 1.0) < 1e-10
         assert all(p > 0 for p in prior)
 
@@ -196,7 +200,7 @@ class TestAbstention:
     def test_abstains_when_tools_uninformative(self):
         """With very low reliability priors, agent should prefer abstaining."""
         configs = _spec_tool_configs()
-        agent = BayesianAgent(tool_configs=configs, name="low_rel")
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior, name="low_rel")
 
         # Artificially set all reliabilities very low (high beta)
         agent.reliability_table[:, :, 0] = 1.0   # alpha = 1
@@ -219,7 +223,7 @@ class TestEarlySubmit:
     def test_submits_without_query_when_confident(self):
         """If answer posterior is already decisive, agent submits immediately."""
         configs = _spec_tool_configs()
-        agent = BayesianAgent(tool_configs=configs, name="confident")
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior, name="confident")
 
         # Hack: give agent a state where it's very confident
         # We do this by making reliability very high and then calling solve_question
@@ -243,7 +247,7 @@ class TestEarlySubmit:
     def test_no_tools_queried(self):
         """When already confident, solve_question returns with no tools queried."""
         configs = _spec_tool_configs()
-        agent = BayesianAgent(tool_configs=configs)
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
 
         # Set reliabilities very low so no tool is worth querying
         agent.reliability_table[:, :, 0] = 1.0
@@ -275,7 +279,7 @@ class TestCrossVerification:
             ToolConfig(cost=0.001, coverage_by_category=full_cov),
             ToolConfig(cost=0.001, coverage_by_category=full_cov),
         ]
-        agent = BayesianAgent(tool_configs=configs)
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
         agent.reliability_table = make_reliability_table(2)
         agent.reliability_table[:, :, 0] = 3.0
         agent.reliability_table[:, :, 1] = 3.0  # E[r] = 0.5
@@ -303,7 +307,7 @@ class TestBenchmarkProtocol:
         """Agent works with the benchmark harness."""
         tools = make_spec_tools()
         configs = [tool_config_for(t) for t in tools]
-        agent = BayesianAgent(tool_configs=configs)
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
         questions = get_questions(seed=42)[:10]  # first 10 for speed
         result = run_benchmark(agent, tools, questions, seed=42)
         assert len(result.records) == 10
@@ -312,7 +316,7 @@ class TestBenchmarkProtocol:
     def test_belief_snapshot_present(self):
         tools = make_spec_tools()
         configs = [tool_config_for(t) for t in tools]
-        agent = BayesianAgent(tool_configs=configs)
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
         questions = get_questions(seed=42)[:3]
         result = run_benchmark(agent, tools, questions, seed=42)
         for rec in result.records:
@@ -333,7 +337,7 @@ class TestConfidenceCalibration:
         """
         tools = make_spec_tools()
         configs = [tool_config_for(t) for t in tools]
-        agent = BayesianAgent(tool_configs=configs)
+        agent = BayesianAgent(tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
 
         # Pre-seed reliability toward truth (as if agent learned from 10 prior questions)
         true_r = {
