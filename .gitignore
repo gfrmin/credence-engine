@@ -5,6 +5,8 @@ __pycache__/
 .pytest_cache/
 .venv/
 .claude/
+dist/
+build/
 
 # Generated experiment output (reproducible via experiments/)
 results/
