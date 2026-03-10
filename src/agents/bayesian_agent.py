@@ -1,18 +1,18 @@
 """Bayesian decision-theoretic agent.
 
 Implements the full decision loop from SPEC §3.2, using the inference layer's
-Beta posteriors, VOI calculations, and EU-based action selection. Category
-inference via keyword heuristics (SPEC §3.6 Option A).
+Beta posteriors, VOI calculations, and EU-based action selection. Fully
+domain-agnostic: categories and category inference are injected at construction.
 """
 
 from __future__ import annotations
 
-import re
+from collections.abc import Callable
 
 import numpy as np
+from numpy.typing import NDArray
 
 from src.agents.common import AgentResult, DecisionStep
-from src.environment.categories import CATEGORIES, NUM_CATEGORIES
 from src.inference.beta_posterior import (
     CategoryPosterior,
     ReliabilityTable,
@@ -31,56 +31,6 @@ from src.inference.decision import (
 from src.inference.voi import ToolConfig, compute_voi, eu_abstain, eu_submit
 
 
-# --- Category inference (keyword heuristics, SPEC §3.6 Option A) ---
-
-_NUMERICAL_PATTERN = re.compile(
-    r"(?:\bcalcul|\bcomput|\bhow many\b|\bhow much\b|\bwhat is \d|"
-    r"\bsquare root\b|\bsum of\b|\barea\b|\bradius\b|"
-    r"\binvest|\btip on\b|\d+\s*[\+\-\*\/\%\^]\s*\d+|\d+%)",
-    re.IGNORECASE,
-)
-_RECENT_PATTERN = re.compile(
-    r"\b(202[0-9]|recent|latest|current|this year|last year|"
-    r"who won the 20|hosted the 20|released .* in 20)\b",
-    re.IGNORECASE,
-)
-_MISCONCEPTION_PATTERN = re.compile(
-    r"(?:\btrue or false\b|\bcommon belief\b|\bmyth\b|"
-    r"\bdo .* really\b|\bis it true\b|\bdoes .* have a\b|"
-    r"\bvisible from space\b|percent of the brain|"
-    r"\bmemory span\b|\bmother reject|\bonly use\b)",
-    re.IGNORECASE,
-)
-_REASONING_PATTERN = re.compile(
-    r"\b(if .* then|therefore|conclude|logic|implies|"
-    r"can we conclude|probability|minimum number|"
-    r"how long does it take .* machines|"
-    r"all but|overtake|missing dollar|"
-    r"counterfeit)\b",
-    re.IGNORECASE,
-)
-
-
-def infer_category_prior(question_text: str) -> CategoryPosterior:
-    """Keyword-based category prior. Returns a probability distribution, not a point estimate."""
-    weights = np.ones(NUM_CATEGORIES, dtype=np.float64)  # base weight 1 each
-
-    if _NUMERICAL_PATTERN.search(question_text):
-        weights[CATEGORIES.index("numerical")] += 9.0
-    if _RECENT_PATTERN.search(question_text):
-        weights[CATEGORIES.index("recent_events")] += 9.0
-    if _MISCONCEPTION_PATTERN.search(question_text):
-        weights[CATEGORIES.index("misconceptions")] += 9.0
-    if _REASONING_PATTERN.search(question_text):
-        weights[CATEGORIES.index("reasoning")] += 9.0
-
-    # If nothing matched strongly, factual gets a mild boost (most common category)
-    if weights.max() == 1.0:
-        weights[CATEGORIES.index("factual")] += 1.0
-
-    return weights / weights.sum()
-
-
 # --- Bayesian Agent ---
 
 class BayesianAgent:
@@ -88,11 +38,18 @@ class BayesianAgent:
 
     Conforms to the benchmark's Agent protocol (on_question_start / choose_action /
     on_tool_response / on_question_end) AND provides solve_question for direct use.
+
+    Categories and category inference are injected at construction, making this
+    agent fully domain-agnostic. When ``categories`` is None, the agent uses
+    ``num_categories`` anonymous categories with a uniform prior.
     """
 
     def __init__(
         self,
         tool_configs: list[ToolConfig],
+        categories: tuple[str, ...] | None = None,
+        num_categories: int = 5,
+        category_infer_fn: Callable[[str], NDArray] | None = None,
         forgetting: float = 1.0,
         name: str = "bayesian",
     ):
@@ -100,7 +57,12 @@ class BayesianAgent:
         self.tool_configs = tool_configs
         self.forgetting = forgetting
         self.num_tools = len(tool_configs)
-        self.reliability_table: ReliabilityTable = make_reliability_table(self.num_tools)
+        self._num_categories = len(categories) if categories else num_categories
+        self._categories = categories
+        self._category_infer_fn = category_infer_fn
+        self.reliability_table: ReliabilityTable = make_reliability_table(
+            self.num_tools, self._num_categories,
+        )
 
         # Per-question state (set in on_question_start)
         self._state: QuestionState | None = None
@@ -114,8 +76,11 @@ class BayesianAgent:
         self, question_id: str, candidates: tuple[str, ...], num_tools: int,
         question_text: str = "",
     ) -> None:
-        cat_prior = infer_category_prior(question_text) if question_text else _uniform_category()
-        self._state = initial_question_state(cat_prior)
+        if question_text and self._category_infer_fn is not None:
+            cat_prior = self._category_infer_fn(question_text)
+        else:
+            cat_prior = self._uniform_category()
+        self._state = initial_question_state(cat_prior, n_candidates=len(candidates))
         self._trace = []
         self._step = 0
         self._question_text = question_text
@@ -203,11 +168,13 @@ class BayesianAgent:
     ) -> AgentResult:
         """Solve a single question using EU maximisation."""
         if category_hint:
-            cat_prior = _category_prior_from_hint(category_hint)
+            cat_prior = self._category_prior_from_hint(category_hint)
+        elif self._category_infer_fn is not None:
+            cat_prior = self._category_infer_fn(question_text)
         else:
-            cat_prior = infer_category_prior(question_text)
+            cat_prior = self._uniform_category()
 
-        self._state = initial_question_state(cat_prior)
+        self._state = initial_question_state(cat_prior, n_candidates=len(candidates))
         self._trace = []
         self._step = 0
         tools_used: list[int] = []
@@ -239,14 +206,14 @@ class BayesianAgent:
                     decision_trace=tuple(self._trace),
                 )
 
+    # --- Private helpers ---
 
-def _uniform_category() -> CategoryPosterior:
-    return np.full(NUM_CATEGORIES, 1.0 / NUM_CATEGORIES)
+    def _uniform_category(self) -> CategoryPosterior:
+        return np.full(self._num_categories, 1.0 / self._num_categories)
 
-
-def _category_prior_from_hint(hint: str) -> CategoryPosterior:
-    """Strong prior on the hinted category."""
-    prior = np.ones(NUM_CATEGORIES, dtype=np.float64)
-    if hint in CATEGORIES:
-        prior[CATEGORIES.index(hint)] += 9.0
-    return prior / prior.sum()
+    def _category_prior_from_hint(self, hint: str) -> CategoryPosterior:
+        """Strong prior on the hinted category."""
+        prior = np.ones(self._num_categories, dtype=np.float64)
+        if self._categories and hint in self._categories:
+            prior[self._categories.index(hint)] += 9.0
+        return prior / prior.sum()
