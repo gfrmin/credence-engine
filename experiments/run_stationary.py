@@ -18,14 +18,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.agents.baselines import (
+from credence.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from src.agents.bayesian_agent import BayesianAgent
-from src.analysis.metrics import (
+from credence.agents.bayesian_agent import BayesianAgent
+from credence.analysis.metrics import (
     abstention_rate,
     accuracy,
     cost_efficiency,
@@ -33,7 +33,7 @@ from src.analysis.metrics import (
     tool_calls_per_question,
     total_score,
 )
-from src.analysis.visualisation import (
+from credence.analysis.visualisation import (
     abstention_analysis,
     calibration_plot,
     cumulative_score_plot,
@@ -41,10 +41,10 @@ from src.analysis.visualisation import (
     tool_calls_comparison,
     tool_selection_heatmap,
 )
-from src.environment.benchmark import BenchmarkResult, run_benchmark
-from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
-from src.environment.questions import get_questions
-from src.environment.tools import make_spec_tools, tool_config_for
+from credence.environment.benchmark import BenchmarkResult, run_benchmark
+from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.questions import get_questions
+from credence.environment.tools import make_spec_tools, tool_config_for
 
 
 RESULTS_DIR = Path("results")
@@ -62,8 +62,8 @@ def make_agents(spec_tools, tool_configs, include_langchain: bool = False):
     ]
 
     if include_langchain:
-        from src.agents.langchain_agent import LangChainAgent
-        from src.agents.langchain_enhanced import LangChainEnhancedAgent
+        from credence.agents.langchain_agent import LangChainAgent
+        from credence.agents.langchain_enhanced import LangChainEnhancedAgent
         agents.extend([
             ("langchain_react", lambda: LangChainAgent()),
             ("langchain_enhanced", lambda: LangChainEnhancedAgent()),

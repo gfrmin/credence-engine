@@ -61,13 +61,13 @@ Every parameter in the Bayesian agent must be justified:
 
 ## Architecture Overview
 
-The project has a dual structure: a domain-agnostic library (`credence/` facade + `src/inference/` + `src/agents/`) and a benchmark-specific environment (`src/environment/`).
+Everything lives under the `credence` package (PyPI: `credence-agents`).
 
 ```
 credence/
-├── credence/                    # Facade package — public API re-exports
-│   └── __init__.py              # BayesianAgent, ToolConfig, ScoringRule, etc.
-├── src/
+├── credence/                    # The package
+│   ├── __init__.py              # Public API re-exports
+│   ├── py.typed
 │   ├── inference/               # Domain-agnostic inference layer
 │   │   ├── beta_posterior.py    # Beta-Bernoulli reliability tracking
 │   │   ├── voi.py               # Value of information, ScoringRule, ToolConfig
@@ -83,11 +83,9 @@ credence/
 │   │   ├── tools.py             # Simulated tools with known reliability
 │   │   ├── questions.py         # Question bank with ground truth
 │   │   └── categories.py        # CATEGORIES tuple, make_keyword_category_infer_fn()
-│   ├── analysis/
-│   │   ├── metrics.py           # Score, calibration, cost metrics
-│   │   └── visualisation.py     # Plots and dashboards
-│   └── utils/
-│       └── logging.py           # Structured logging for analysis
+│   └── analysis/
+│       ├── metrics.py           # Score, calibration, cost metrics
+│       └── visualisation.py     # Plots and dashboards
 ├── tests/
 ├── experiments/
 │   ├── run_stationary.py        # Main experiment: stationary reliabilities

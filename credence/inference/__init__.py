@@ -1,6 +1,6 @@
 """Inference layer: Beta-Bernoulli posteriors, VOI, and EU-based decisions."""
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     AnswerPosterior,
     CategoryPosterior,
     ReliabilityTable,
@@ -13,7 +13,7 @@ from src.inference.beta_posterior import (
     update_answer_posterior,
     update_reliability_table,
 )
-from src.inference.voi import (
+from credence.inference.voi import (
     ScoringRule,
     REWARD_CORRECT,
     PENALTY_WRONG,
@@ -24,7 +24,7 @@ from src.inference.voi import (
     eu_star,
     compute_voi,
 )
-from src.inference.decision import (
+from credence.inference.decision import (
     ActionType,
     Action,
     QuestionState,

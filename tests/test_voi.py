@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     make_reliability_table,
     uniform_answer_prior,
     uniform_category_prior,
@@ -12,7 +12,7 @@ from src.inference.beta_posterior import (
 
 NUM_CANDIDATES = 4
 NUM_CATEGORIES = 5
-from src.inference.voi import (
+from credence.inference.voi import (
     PENALTY_WRONG,
     REWARD_ABSTAIN,
     REWARD_CORRECT,
@@ -200,7 +200,7 @@ def test_response_probabilities_sum_with_coverage():
     table = make_reliability_table(1)
     table[0, :, 0] = 4.0
     table[0, :, 1] = 1.0
-    from src.inference.beta_posterior import (
+    from credence.inference.beta_posterior import (
         effective_reliability as eff_r,
         update_category_posterior_on_response,
     )

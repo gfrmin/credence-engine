@@ -17,17 +17,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.agents.baselines import (
+from credence.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from src.agents.bayesian_agent import BayesianAgent
-from src.environment.benchmark import BenchmarkResult
-from src.environment.questions import get_questions
-from src.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
-from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.agents.bayesian_agent import BayesianAgent
+from credence.environment.benchmark import BenchmarkResult
+from credence.environment.questions import get_questions
+from credence.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
+from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 
 
 RESULTS_DIR = Path("results")
@@ -79,13 +79,13 @@ def run_drift_experiment(
             agent = factory()
 
             # Manual benchmark loop with tool swap at DRIFT_POINT
-            from src.environment.benchmark import (
+            from credence.environment.benchmark import (
                 QuestionRecord,
                 BenchmarkResult as BR,
             )
-            from src.environment.tools import query_tool, ResponseType
-            from src.inference.voi import REWARD_CORRECT, PENALTY_WRONG, REWARD_ABSTAIN
-            from src.inference.decision import ActionType
+            from credence.environment.tools import query_tool, ResponseType
+            from credence.inference.voi import REWARD_CORRECT, PENALTY_WRONG, REWARD_ABSTAIN
+            from credence.inference.decision import ActionType
 
             q_rng = np.random.default_rng(seed)
             records = []

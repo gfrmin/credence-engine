@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     make_reliability_table,
     uniform_answer_prior,
     uniform_category_prior,
@@ -12,7 +12,7 @@ from src.inference.beta_posterior import (
 
 NUM_CANDIDATES = 4
 NUM_CATEGORIES = 5
-from src.inference.decision import (
+from credence.inference.decision import (
     Action,
     ActionType,
     QuestionState,
@@ -22,7 +22,7 @@ from src.inference.decision import (
     initial_question_state,
     select_action,
 )
-from src.inference.voi import ToolConfig
+from credence.inference.voi import ToolConfig
 
 
 # --- Helper: standard 4-tool configs matching the spec ---
@@ -288,7 +288,7 @@ def test_learning_over_questions():
         )
 
     # Tool 0 should now have much higher reliability than tool 1
-    from src.inference.beta_posterior import expected_reliability
+    from credence.inference.beta_posterior import expected_reliability
     r0 = expected_reliability(table[0, 0, 0], table[0, 0, 1])
     r1 = expected_reliability(table[1, 0, 0], table[1, 0, 1])
     assert r0 > 0.8

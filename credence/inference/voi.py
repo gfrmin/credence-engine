@@ -12,7 +12,7 @@ from typing import NamedTuple
 import numpy as np
 from numpy.typing import NDArray
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     AnswerPosterior,
     CategoryPosterior,
     ReliabilityTable,

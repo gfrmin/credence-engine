@@ -12,13 +12,13 @@ from collections.abc import Callable
 import numpy as np
 from numpy.typing import NDArray
 
-from src.agents.common import AgentResult, DecisionStep
-from src.inference.beta_posterior import (
+from credence.agents.common import AgentResult, DecisionStep
+from credence.inference.beta_posterior import (
     CategoryPosterior,
     ReliabilityTable,
     make_reliability_table,
 )
-from src.inference.decision import (
+from credence.inference.decision import (
     Action,
     ActionType,
     QuestionState,
@@ -28,7 +28,7 @@ from src.inference.decision import (
     initial_question_state,
     select_action,
 )
-from src.inference.voi import ToolConfig, compute_voi, eu_abstain, eu_submit
+from credence.inference.voi import ToolConfig, compute_voi, eu_abstain, eu_submit
 
 
 # --- Bayesian Agent ---

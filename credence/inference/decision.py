@@ -13,7 +13,7 @@ from typing import NamedTuple
 
 import numpy as np
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     CategoryPosterior,
     ReliabilityTable,
     effective_reliability,
@@ -22,7 +22,7 @@ from src.inference.beta_posterior import (
     update_category_posterior_on_response,
     update_reliability_table,
 )
-from src.inference.voi import (
+from credence.inference.voi import (
     ScoringRule,
     ToolConfig,
     compute_voi,

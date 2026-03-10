@@ -10,8 +10,8 @@ from collections import defaultdict
 
 import numpy as np
 
-from src.environment.benchmark import BenchmarkResult
-from src.environment.tools import SimulatedTool
+from credence.environment.benchmark import BenchmarkResult
+from credence.environment.tools import SimulatedTool
 
 
 def total_score(result: BenchmarkResult) -> float:

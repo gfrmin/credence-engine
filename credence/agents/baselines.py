@@ -11,13 +11,13 @@ from collections import Counter
 
 import numpy as np
 
-from src.agents.common import DecisionStep
-from src.inference.decision import Action, ActionType
-from src.inference.voi import ToolConfig
-from src.environment.tools import SimulatedTool
+from credence.agents.common import DecisionStep
+from credence.inference.decision import Action, ActionType
+from credence.inference.voi import ToolConfig
+from credence.environment.tools import SimulatedTool
 
 # Reuse BayesianAgent's full decision machinery for the oracle
-from src.agents.bayesian_agent import BayesianAgent
+from credence.agents.bayesian_agent import BayesianAgent
 
 
 class RandomAgent:

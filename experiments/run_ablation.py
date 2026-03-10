@@ -17,14 +17,14 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from src.agents.bayesian_agent import BayesianAgent
-from src.analysis.metrics import accuracy, total_score, tool_calls_per_question
-from src.analysis.visualisation import score_comparison_bar, tool_calls_comparison
-from src.environment.benchmark import BenchmarkResult, run_benchmark
-from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
-from src.environment.questions import get_questions
-from src.environment.tools import make_spec_tools, tool_config_for
-from src.inference.decision import Action, ActionType
+from credence.agents.bayesian_agent import BayesianAgent
+from credence.analysis.metrics import accuracy, total_score, tool_calls_per_question
+from credence.analysis.visualisation import score_comparison_bar, tool_calls_comparison
+from credence.environment.benchmark import BenchmarkResult, run_benchmark
+from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.questions import get_questions
+from credence.environment.tools import make_spec_tools, tool_config_for
+from credence.inference.decision import Action, ActionType
 
 
 RESULTS_DIR = Path("results")
@@ -49,7 +49,7 @@ class NoVOIAgent(BayesianAgent):
             action = Action(ActionType.QUERY, tool_idx=cheapest)
         else:
             # After one tool, defer to normal EU-based submit/abstain
-            from src.inference.voi import eu_submit, eu_abstain
+            from credence.inference.voi import eu_submit, eu_abstain
             eu_s = eu_submit(self._state.answer_posterior)
             eu_a = eu_abstain()
             if eu_s >= eu_a:
@@ -58,7 +58,7 @@ class NoVOIAgent(BayesianAgent):
             else:
                 action = Action(ActionType.ABSTAIN)
 
-        from src.agents.common import DecisionStep
+        from credence.agents.common import DecisionStep
         self._trace.append(DecisionStep(
             step=self._step, eu_submit=0.0, eu_abstain=0.0,
             eu_query={}, chosen_action=str(action),
@@ -74,7 +74,7 @@ class NoCategoryAgent(BayesianAgent):
 
     def on_question_start(self, question_id, candidates, num_tools, question_text=""):
         # Force uniform category prior regardless of question text
-        from src.inference.decision import initial_question_state
+        from credence.inference.decision import initial_question_state
         uniform = np.full(self._num_categories, 1.0 / self._num_categories)
         self._state = initial_question_state(uniform)
         self._trace = []
@@ -123,7 +123,7 @@ class SingleToolAgent(BayesianAgent):
         if action.action_type == ActionType.QUERY:
             if self._queried_this_q:
                 # Force submit/abstain instead of second query
-                from src.inference.voi import eu_submit, eu_abstain
+                from credence.inference.voi import eu_submit, eu_abstain
                 eu_s = eu_submit(self._state.answer_posterior)
                 eu_a = eu_abstain()
                 if eu_s >= eu_a:

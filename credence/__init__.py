@@ -1,7 +1,7 @@
 """Credence: Bayesian decision-theoretic agents."""
 
 # Inference layer
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     AnswerPosterior,
     CategoryPosterior,
     ReliabilityTable,
@@ -14,7 +14,7 @@ from src.inference.beta_posterior import (
     update_category_posterior_on_response,
     update_reliability_table,
 )
-from src.inference.voi import (
+from credence.inference.voi import (
     ScoringRule,
     ToolConfig,
     eu_submit,
@@ -22,7 +22,7 @@ from src.inference.voi import (
     eu_star,
     compute_voi,
 )
-from src.inference.decision import (
+from credence.inference.decision import (
     ActionType,
     Action,
     QuestionState,
@@ -34,8 +34,8 @@ from src.inference.decision import (
 )
 
 # Agent
-from src.agents.bayesian_agent import BayesianAgent
-from src.agents.common import AgentResult, DecisionStep
+from credence.agents.bayesian_agent import BayesianAgent
+from credence.agents.common import AgentResult, DecisionStep
 
 __all__ = [
     # Beta posteriors

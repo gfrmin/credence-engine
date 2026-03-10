@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     effective_reliability,
     expected_reliability,
     make_reliability_table,

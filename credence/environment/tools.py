@@ -11,8 +11,8 @@ from typing import NamedTuple
 
 import numpy as np
 
-from src.environment.categories import CATEGORIES
-from src.inference.voi import ToolConfig
+from credence.environment.categories import CATEGORIES
+from credence.inference.voi import ToolConfig
 
 
 class ResponseType(Enum):

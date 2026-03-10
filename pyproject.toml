@@ -3,11 +3,20 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "credence"
+name = "credence-agents"
 version = "0.1.0"
-description = "Bayesian decision-theoretic agents — LangChain but actually intelligent"
+description = "Bayesian decision-theoretic agents — expected utility maximisation, not prompt engineering"
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.11",
@@ -28,8 +37,12 @@ dev = [
     "ruff",
 ]
 
+[project.urls]
+Homepage = "https://github.com/gfrmin/credence"
+Repository = "https://github.com/gfrmin/credence"
+
 [tool.setuptools.packages.find]
-include = ["credence*", "src*"]
+include = ["credence*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

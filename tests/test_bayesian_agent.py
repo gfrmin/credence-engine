@@ -15,13 +15,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.agents.bayesian_agent import BayesianAgent
-from src.environment.categories import CATEGORIES, make_keyword_category_infer_fn
-from src.inference.beta_posterior import make_reliability_table
-from src.inference.voi import ToolConfig
-from src.environment.tools import make_spec_tools, tool_config_for
-from src.environment.questions import Question, get_questions
-from src.environment.benchmark import run_benchmark
+from credence.agents.bayesian_agent import BayesianAgent
+from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.inference.beta_posterior import make_reliability_table
+from credence.inference.voi import ToolConfig
+from credence.environment.tools import make_spec_tools, tool_config_for
+from credence.environment.questions import Question, get_questions
+from credence.environment.benchmark import run_benchmark
 
 _infer_category_prior = make_keyword_category_infer_fn(CATEGORIES)
 
@@ -364,7 +364,7 @@ class TestConfidenceCalibration:
                 if action.action_type == ActionType.QUERY:
                     tool_idx = action.tool_idx
                     assert tool_idx is not None
-                    from src.environment.tools import query_tool, ResponseType
+                    from credence.environment.tools import query_tool, ResponseType
                     resp = query_tool(tools[tool_idx], q, rng)
                     candidate = resp.candidate_idx if resp.response_type == ResponseType.ANSWER else None
                     agent.on_tool_response(tool_idx, candidate)
@@ -394,4 +394,4 @@ class TestConfidenceCalibration:
 
 
 # --- Import ActionType for use in tests ---
-from src.inference.decision import ActionType
+from credence.inference.decision import ActionType

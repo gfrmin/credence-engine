@@ -1,6 +1,6 @@
 """Environment layer: simulated tools, question bank, and benchmark harness."""
 
-from src.environment.tools import (
+from credence.environment.tools import (
     ResponseType,
     ToolResponse,
     SimulatedTool,
@@ -8,12 +8,12 @@ from src.environment.tools import (
     make_spec_tools,
     tool_config_for,
 )
-from src.environment.questions import (
+from credence.environment.questions import (
     Question,
     QUESTION_BANK,
     get_questions,
 )
-from src.environment.benchmark import (
+from credence.environment.benchmark import (
     Agent,
     QuestionRecord,
     BenchmarkResult,

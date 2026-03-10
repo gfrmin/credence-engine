@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from src.inference.beta_posterior import (
+from credence.inference.beta_posterior import (
     effective_reliability,
     expected_reliability,
     make_reliability_table,
@@ -21,12 +21,12 @@ from src.inference.beta_posterior import (
 
 NUM_CANDIDATES = 4
 NUM_CATEGORIES = 5
-from src.inference.decision import (
+from credence.inference.decision import (
     ActionType,
     QuestionState,
     select_action,
 )
-from src.inference.voi import (
+from credence.inference.voi import (
     ToolConfig,
     compute_voi,
     eu_abstain,
