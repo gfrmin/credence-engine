@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "credence-agents"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bayesian decision-theoretic agents — expected utility maximisation, not prompt engineering"
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"

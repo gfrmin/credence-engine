@@ -28,7 +28,9 @@ from credence.inference.decision import (
     initial_question_state,
     select_action,
 )
-from credence.inference.voi import ToolConfig, compute_voi, eu_abstain, eu_submit
+from credence.inference.voi import ScoringRule, ToolConfig, compute_voi, eu_abstain, eu_submit
+
+_DEFAULT_SCORING = ScoringRule()
 
 
 # --- Bayesian Agent ---
@@ -52,10 +54,12 @@ class BayesianAgent:
         category_infer_fn: Callable[[str], NDArray] | None = None,
         forgetting: float = 1.0,
         name: str = "bayesian",
+        scoring: ScoringRule = _DEFAULT_SCORING,
     ):
         self.name = name
         self.tool_configs = tool_configs
         self.forgetting = forgetting
+        self.scoring = scoring
         self.num_tools = len(tool_configs)
         self._num_categories = len(categories) if categories else num_categories
         self._categories = categories
@@ -90,8 +94,8 @@ class BayesianAgent:
         self._step += 1
 
         # Log decision landscape before choosing
-        eu_sub = eu_submit(self._state.answer_posterior)
-        eu_abs = eu_abstain()
+        eu_sub = eu_submit(self._state.answer_posterior, self.scoring)
+        eu_abs = eu_abstain(self.scoring)
         eu_queries: dict[int, float] = {}
         for t_idx in range(self.num_tools):
             if t_idx in self._state.used_tools:
@@ -102,10 +106,11 @@ class BayesianAgent:
                 t_idx,
                 self._state.category_posterior,
                 self.tool_configs[t_idx],
+                self.scoring,
             )
             eu_queries[t_idx] = voi - self.tool_configs[t_idx].cost
 
-        action = select_action(self._state, self.reliability_table, self.tool_configs)
+        action = select_action(self._state, self.reliability_table, self.tool_configs, self.scoring)
 
         if action.action_type == ActionType.SUBMIT:
             chosen = f"submit({action.answer_idx})"
