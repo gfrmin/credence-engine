@@ -4,7 +4,10 @@
 from credence.inference.beta_posterior import (
     AnswerPosterior,
     CategoryPosterior,
+    CoverageTable,
     ReliabilityTable,
+    expected_coverage,
+    make_coverage_table,
     make_reliability_table,
     uniform_answer_prior,
     uniform_category_prior,
@@ -12,6 +15,7 @@ from credence.inference.beta_posterior import (
     expected_reliability,
     update_answer_posterior,
     update_category_posterior_on_response,
+    update_coverage_table,
     update_reliability_table,
 )
 from credence.inference.voi import (
@@ -29,6 +33,7 @@ from credence.inference.decision import (
     initial_question_state,
     select_action,
     apply_tool_response,
+    compute_binary_reliability_updates,
     compute_reliability_updates,
     apply_reliability_updates,
 )
@@ -39,18 +44,20 @@ from credence.agents.common import AgentResult, DecisionStep
 
 __all__ = [
     # Beta posteriors
-    "AnswerPosterior", "CategoryPosterior", "ReliabilityTable",
+    "AnswerPosterior", "CategoryPosterior", "CoverageTable", "ReliabilityTable",
+    "expected_coverage", "make_coverage_table",
     "make_reliability_table", "uniform_answer_prior", "uniform_category_prior",
     "effective_reliability", "expected_reliability",
     "update_answer_posterior", "update_category_posterior_on_response",
-    "update_reliability_table",
+    "update_coverage_table", "update_reliability_table",
     # VOI / EU
     "ScoringRule", "ToolConfig",
     "eu_submit", "eu_abstain", "eu_star", "compute_voi",
     # Decision loop
     "ActionType", "Action", "QuestionState",
     "initial_question_state", "select_action", "apply_tool_response",
-    "compute_reliability_updates", "apply_reliability_updates",
+    "compute_binary_reliability_updates", "compute_reliability_updates",
+    "apply_reliability_updates",
     # Agent
     "BayesianAgent", "AgentResult", "DecisionStep",
 ]

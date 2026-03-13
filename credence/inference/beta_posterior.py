@@ -16,6 +16,7 @@ from numpy.typing import NDArray
 AnswerPosterior = NDArray[np.float64]     # shape (n,), sums to 1
 CategoryPosterior = NDArray[np.float64]   # shape (num_categories,), sums to 1
 ReliabilityTable = NDArray[np.float64]    # shape (num_tools, num_categories, 2); last dim = (alpha, beta)
+CoverageTable = NDArray[np.float64]      # shape (num_tools, num_categories, 2); last dim = (alpha, beta)
 
 _EPSILON = 1e-10
 
@@ -96,6 +97,58 @@ def update_answer_posterior(
     if total < _EPSILON:
         return prior.copy()
     return updated / total
+
+
+def make_coverage_table(
+    num_tools: int,
+    num_categories: int,
+    priors: NDArray[np.float64] | None = None,
+    prior_strength: float = 10.0,
+) -> CoverageTable:
+    """Initialise a Beta-parameterised coverage table.
+
+    Each entry tracks P(tool returns an answer | category) as a Beta distribution.
+
+    Args:
+        priors: shape (num_tools, num_categories) with values in (0, 1).
+                If None, defaults to 0.5 (uninformative).
+        prior_strength: total pseudo-count per cell (alpha + beta = prior_strength).
+    """
+    if priors is None:
+        half = prior_strength * 0.5
+        alpha = np.full((num_tools, num_categories), half, dtype=np.float64)
+        beta = np.full((num_tools, num_categories), half, dtype=np.float64)
+    else:
+        priors = np.asarray(priors, dtype=np.float64)
+        alpha = priors * prior_strength
+        beta = (1.0 - priors) * prior_strength
+    return np.stack([alpha, beta], axis=-1)
+
+
+def expected_coverage(table: CoverageTable, tool_idx: int) -> NDArray[np.float64]:
+    """E[Beta(alpha, beta)] per category for one tool, clipped to [0.1, 1.0]."""
+    params = table[tool_idx]  # shape (num_categories, 2)
+    return np.clip(params[:, 0] / (params[:, 0] + params[:, 1]), 0.1, 1.0)
+
+
+def update_coverage_table(
+    table: CoverageTable,
+    tool_idx: int,
+    category_posterior: CategoryPosterior,
+    was_useful: bool | None,
+) -> CoverageTable:
+    """Soft Beta update: alpha += P(c) on success, beta += P(c) on failure.
+
+    Returns a NEW table (original is not mutated).
+    """
+    new_table = table.copy()
+    if was_useful is None:
+        return new_table
+    if was_useful:
+        new_table[tool_idx, :, 0] += category_posterior
+    else:
+        new_table[tool_idx, :, 1] += category_posterior
+    return new_table
 
 
 def update_reliability_table(

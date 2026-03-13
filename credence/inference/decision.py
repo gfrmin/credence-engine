@@ -86,6 +86,9 @@ def select_action(
     if eu_abs > eu_sub + 1e-12:
         best_action = Action(ActionType.ABSTAIN, eu=eu_abs)
 
+    # EU of the best non-query action — used to convert VOI (a delta) to absolute EU
+    eu_current = best_action.eu
+
     for tool_idx, config in enumerate(tool_configs):
         if tool_idx in state.used_tools:
             continue
@@ -97,7 +100,7 @@ def select_action(
             config,
             scoring,
         )
-        net_eu = voi - config.cost
+        net_eu = eu_current + voi - config.cost
         if net_eu > best_action.eu:
             best_action = Action(ActionType.QUERY, tool_idx=tool_idx, eu=net_eu)
 
@@ -173,6 +176,24 @@ def compute_reliability_updates(
             updates[tool_idx] = False if resp == submitted_answer_idx else None
 
     return updates
+
+
+def compute_binary_reliability_updates(
+    tool_responses: dict[int, int | None],
+    was_correct: bool | None,
+) -> dict[int, bool | None]:
+    """Determine per-tool correctness from binary (correct/wrong) feedback.
+
+    Simpler than compute_reliability_updates: no candidate-agreement logic.
+    Each tool that returned a response inherits the overall outcome; tools
+    that returned None get None (no reliability signal).
+    """
+    if was_correct is None:
+        return {t: None for t in tool_responses}
+    return {
+        t: (was_correct if resp is not None else None)
+        for t, resp in tool_responses.items()
+    }
 
 
 def apply_reliability_updates(

@@ -308,7 +308,7 @@ class TestDecisionHandWorked:
         assert voi_code == pytest.approx(6.0, abs=1e-4)
 
     def test_select_action_picks_query(self):
-        """Net EU(query) = 6.0 - 1.0 = 5.0 > EU(submit) = 1.0 -> agent queries."""
+        """EU(query) = eu_current + VOI - cost = 1.0 + 6.0 - 1.0 = 6.0 > EU(submit) = 1.0."""
         table, cat_post = self._setup()
         config = ToolConfig(cost=1.0, coverage_by_category=np.ones(NUM_CATEGORIES))
 
@@ -322,11 +322,11 @@ class TestDecisionHandWorked:
         action = select_action(state, table, [config])
 
         print(f"Action: {action.action_type.name}, tool={action.tool_idx}, EU={action.eu:.4f}")
-        print(f"Expected: QUERY, tool=0, EU=5.0")
+        print(f"Expected: QUERY, tool=0, EU=6.0")
 
         assert action.action_type == ActionType.QUERY
         assert action.tool_idx == 0
-        assert action.eu == pytest.approx(5.0, abs=1e-4)
+        assert action.eu == pytest.approx(6.0, abs=1e-4)
 
 
 # =============================================================================

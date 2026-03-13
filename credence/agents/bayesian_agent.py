@@ -96,6 +96,7 @@ class BayesianAgent:
         # Log decision landscape before choosing
         eu_sub = eu_submit(self._state.answer_posterior, self.scoring)
         eu_abs = eu_abstain(self.scoring)
+        eu_current = max(eu_sub, eu_abs)
         eu_queries: dict[int, float] = {}
         for t_idx in range(self.num_tools):
             if t_idx in self._state.used_tools:
@@ -108,7 +109,7 @@ class BayesianAgent:
                 self.tool_configs[t_idx],
                 self.scoring,
             )
-            eu_queries[t_idx] = voi - self.tool_configs[t_idx].cost
+            eu_queries[t_idx] = eu_current + voi - self.tool_configs[t_idx].cost
 
         action = select_action(self._state, self.reliability_table, self.tool_configs, self.scoring)
 

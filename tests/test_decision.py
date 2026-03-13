@@ -18,11 +18,12 @@ from credence.inference.decision import (
     QuestionState,
     apply_reliability_updates,
     apply_tool_response,
+    compute_binary_reliability_updates,
     compute_reliability_updates,
     initial_question_state,
     select_action,
 )
-from credence.inference.voi import ToolConfig
+from credence.inference.voi import ScoringRule, ToolConfig
 
 
 # --- Helper: standard 4-tool configs matching the spec ---
@@ -276,6 +277,41 @@ def test_micro_scenario_full_decision_loop():
     assert action.answer_idx == 0
 
 
+def test_voi_exceeding_cost_triggers_query():
+    """VOI > cost should trigger a query even when eu_current is positive.
+
+    Regression test for the 2x comparison bug: select_action used to compare
+    (VOI - cost) against eu_current instead of (eu_current + VOI - cost).
+    This meant VOI had to exceed (cost + eu_current) instead of just cost.
+    """
+    # Setup: moderate posterior where eu_submit > 0
+    post = np.array([0.5, 0.2, 0.2, 0.1])
+    cat_post = uniform_category_prior()
+    state = QuestionState(
+        answer_posterior=post,
+        category_posterior=cat_post,
+        used_tools=frozenset(),
+        tool_responses={},
+    )
+
+    # Scoring with meaningful penalty so VOI is nonzero
+    scoring = ScoringRule(reward_correct=1.0, penalty_wrong=-0.5, reward_abstain=-0.05)
+
+    # Tool with r_eff=0.7 and low cost
+    table = make_reliability_table(1)
+    table[0, :, 0] = 7.0   # alpha=7, beta=3 → r_eff=0.7
+    table[0, :, 1] = 3.0
+
+    configs = [ToolConfig(cost=0.02, coverage_by_category=np.ones(NUM_CATEGORIES))]
+
+    action = select_action(state, table, configs, scoring)
+
+    # With the fix, VOI (~0.21) > cost (0.02) → query
+    # Without the fix, VOI - cost (0.19) < eu_submit (0.25) → wrongly submits
+    assert action.action_type == ActionType.QUERY
+    assert action.tool_idx == 0
+
+
 def test_learning_over_questions():
     """After several questions, agent learns to prefer reliable tool."""
     table = make_reliability_table(2)
@@ -303,3 +339,30 @@ def test_learning_over_questions():
     action = select_action(state, table, configs)
     assert action.action_type == ActionType.QUERY
     assert action.tool_idx == 0
+
+
+# --- Binary reliability updates ---
+
+
+def test_binary_updates_correct():
+    """Correct outcome: responding tools get True, None-tools get None."""
+    responses: dict[int, int | None] = {0: 2, 1: 0, 2: None}
+    updates = compute_binary_reliability_updates(responses, was_correct=True)
+    assert updates[0] is True
+    assert updates[1] is True
+    assert updates[2] is None
+
+
+def test_binary_updates_wrong():
+    """Wrong outcome: responding tools get False, None-tools get None."""
+    responses: dict[int, int | None] = {0: 1, 1: None}
+    updates = compute_binary_reliability_updates(responses, was_correct=False)
+    assert updates[0] is False
+    assert updates[1] is None
+
+
+def test_binary_updates_unknown():
+    """Unknown outcome: all tools get None."""
+    responses: dict[int, int | None] = {0: 0, 1: 2}
+    updates = compute_binary_reliability_updates(responses, was_correct=None)
+    assert all(v is None for v in updates.values())
