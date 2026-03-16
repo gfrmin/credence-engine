@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from credence.agents.bayesian_agent import BayesianAgent
+from credence.agents.common import DecisionStep
 from credence.analysis.metrics import accuracy, total_score, tool_calls_per_question
 from credence.analysis.visualisation import score_comparison_bar, tool_calls_comparison
 from credence.environment.benchmark import BenchmarkResult, run_benchmark
@@ -25,9 +26,17 @@ from credence.environment.categories import CATEGORIES, make_keyword_category_in
 from credence.environment.questions import get_questions
 from credence.environment.tools import make_spec_tools, tool_config_for
 from credence.inference.decision import Action, ActionType
+from credence.inference.voi import ScoringRule
+from credence.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
+
+
+def _eu_submit(ans_w, scoring):
+    """EU of submitting the best answer given posterior weights."""
+    p_best = max(ans_w)
+    return p_best * scoring.reward_correct + (1 - p_best) * scoring.penalty_wrong
 
 
 # --- Ablation variants ---
@@ -35,72 +44,58 @@ RESULTS_DIR = Path("results")
 class NoVOIAgent(BayesianAgent):
     """Always queries cheapest applicable tool instead of using VOI."""
 
-    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_voi"):
-        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
-
     def choose_action(self) -> Action:
-        assert self._state is not None
+        assert self._answer_measure is not None
         self._step += 1
 
-        # If no tools queried yet, pick cheapest unused
-        unused = [i for i in range(self.num_tools) if i not in self._state.used_tools]
-        if unused and not self._state.tool_responses:
-            cheapest = min(unused, key=lambda i: self.tool_configs[i].cost)
+        # If no tools queried yet, pick cheapest available
+        if self._available and not self._tool_responses:
+            cheapest = min(self._available, key=lambda i: self.tool_configs[i].cost)
             action = Action(ActionType.QUERY, tool_idx=cheapest)
         else:
-            # After one tool, defer to normal EU-based submit/abstain
-            from credence.inference.voi import eu_submit, eu_abstain
-            eu_s = eu_submit(self._state.answer_posterior)
-            eu_a = eu_abstain()
+            # After one tool, submit or abstain based on EU
+            ans_w = self.bridge.weights(self._answer_measure)
+            eu_s = _eu_submit(ans_w, self.scoring)
+            eu_a = self.scoring.reward_abstain
             if eu_s >= eu_a:
-                best = int(np.argmax(self._state.answer_posterior))
+                best = int(max(range(len(ans_w)), key=lambda i: ans_w[i]))
                 action = Action(ActionType.SUBMIT, answer_idx=best)
             else:
                 action = Action(ActionType.ABSTAIN)
 
-        from credence.agents.common import DecisionStep
+        chosen = (f"submit({action.answer_idx})" if action.action_type == ActionType.SUBMIT
+                  else "abstain" if action.action_type == ActionType.ABSTAIN
+                  else f"query({action.tool_idx})")
         self._trace.append(DecisionStep(
             step=self._step, eu_submit=0.0, eu_abstain=0.0,
-            eu_query={}, chosen_action=str(action),
+            eu_query={}, chosen_action=chosen,
         ))
         return action
 
 
 class NoCategoryAgent(BayesianAgent):
-    """Treats all categories as identical (uniform category prior, never updated)."""
-
-    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_category"):
-        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
+    """Treats all categories as identical (resets category belief each question)."""
 
     def on_question_start(self, question_id, candidates, num_tools, question_text=""):
-        # Force uniform category prior regardless of question text
-        from credence.inference.decision import initial_question_state
-        uniform = np.full(self._num_categories, 1.0 / self._num_categories)
-        self._state = initial_question_state(uniform)
-        self._trace = []
-        self._step = 0
-        self._question_text = ""
+        super().on_question_start(question_id, candidates, num_tools, question_text=question_text)
+        # Reset category belief to uniform — discard any cross-question learning
+        self.cat_belief = self.bridge.make_cat_belief(self._num_categories)
 
 
 class NoAbstentionAgent(BayesianAgent):
     """Must always submit — abstention disabled."""
 
-    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_abstention"):
-        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
-
     def choose_action(self) -> Action:
         action = super().choose_action()
         if action.action_type == ActionType.ABSTAIN:
-            best = int(np.argmax(self._state.answer_posterior))
+            ans_w = self.bridge.weights(self._answer_measure)
+            best = int(max(range(len(ans_w)), key=lambda i: ans_w[i]))
             return Action(ActionType.SUBMIT, answer_idx=best)
         return action
 
 
 class FixedReliabilityAgent(BayesianAgent):
     """No learning — uses prior reliability throughout."""
-
-    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="fixed_reliability"):
-        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
 
     def on_question_end(self, was_correct):
         # Skip reliability update
@@ -110,8 +105,8 @@ class FixedReliabilityAgent(BayesianAgent):
 class SingleToolAgent(BayesianAgent):
     """Only queries one tool per question — no cross-verification."""
 
-    def __init__(self, tool_configs, categories=CATEGORIES, category_infer_fn=None, name="no_crossverify"):
-        super().__init__(tool_configs=tool_configs, categories=categories, category_infer_fn=category_infer_fn, name=name)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._queried_this_q = False
 
     def on_question_start(self, question_id, candidates, num_tools, question_text=""):
@@ -123,27 +118,27 @@ class SingleToolAgent(BayesianAgent):
         if action.action_type == ActionType.QUERY:
             if self._queried_this_q:
                 # Force submit/abstain instead of second query
-                from credence.inference.voi import eu_submit, eu_abstain
-                eu_s = eu_submit(self._state.answer_posterior)
-                eu_a = eu_abstain()
+                ans_w = self.bridge.weights(self._answer_measure)
+                eu_s = _eu_submit(ans_w, self.scoring)
+                eu_a = self.scoring.reward_abstain
                 if eu_s >= eu_a:
-                    best = int(np.argmax(self._state.answer_posterior))
+                    best = int(max(range(len(ans_w)), key=lambda i: ans_w[i]))
                     return Action(ActionType.SUBMIT, answer_idx=best)
                 return Action(ActionType.ABSTAIN)
             self._queried_this_q = True
         return action
 
 
-def make_ablation_agents(tool_configs):
+def make_ablation_agents(tool_configs, bridge):
     """Create all ablation variants."""
     _infer_fn = make_keyword_category_infer_fn()
     return [
-        ("full_agent", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="full_agent")),
-        ("no_voi", lambda: NoVOIAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
-        ("no_category", lambda: NoCategoryAgent(tool_configs=tool_configs, categories=CATEGORIES)),
-        ("no_abstention", lambda: NoAbstentionAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
-        ("fixed_reliability", lambda: FixedReliabilityAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
-        ("no_crossverify", lambda: SingleToolAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("full_agent", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="full_agent")),
+        ("no_voi", lambda: NoVOIAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_voi")),
+        ("no_category", lambda: NoCategoryAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="no_category")),
+        ("no_abstention", lambda: NoAbstentionAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_abstention")),
+        ("fixed_reliability", lambda: FixedReliabilityAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="fixed_reliability")),
+        ("no_crossverify", lambda: SingleToolAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_crossverify")),
     ]
 
 
@@ -151,7 +146,8 @@ def run_ablation(n_seeds: int = 20) -> dict[str, list[BenchmarkResult]]:
     """Run all ablation variants."""
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
-    agents = make_ablation_agents(tool_configs)
+    bridge = CredenceBridge()
+    agents = make_ablation_agents(tool_configs, bridge)
 
     results: dict[str, list[BenchmarkResult]] = {}
 
