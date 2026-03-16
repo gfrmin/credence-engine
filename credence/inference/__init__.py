@@ -1,67 +1,32 @@
-"""Inference layer: Beta-Bernoulli posteriors, VOI, and EU-based decisions."""
+"""Inference layer: types and Julia bridge.
 
-from credence.inference.beta_posterior import (
-    AnswerPosterior,
-    CategoryPosterior,
-    ReliabilityTable,
-    make_reliability_table,
-    uniform_answer_prior,
-    uniform_category_prior,
-    expected_reliability,
-    effective_reliability,
-    update_category_posterior_on_response,
-    update_answer_posterior,
-    update_reliability_table,
-)
+Computation (Beta posteriors, VOI, EU-based decisions) is now handled by the
+Julia Credence DSL. This package retains configuration types and post-question
+feedback logic used by the Python agent and benchmark harness.
+"""
+
 from credence.inference.voi import (
-    ScoringRule,
-    REWARD_CORRECT,
     PENALTY_WRONG,
     REWARD_ABSTAIN,
+    REWARD_CORRECT,
+    ScoringRule,
     ToolConfig,
-    eu_submit,
-    eu_abstain,
-    eu_star,
-    compute_voi,
 )
 from credence.inference.decision import (
-    ActionType,
     Action,
-    QuestionState,
-    initial_question_state,
-    select_action,
-    apply_tool_response,
+    ActionType,
+    compute_binary_reliability_updates,
     compute_reliability_updates,
-    apply_reliability_updates,
 )
 
 __all__ = [
-    "AnswerPosterior",
-    "CategoryPosterior",
-    "ReliabilityTable",
-    "make_reliability_table",
-    "uniform_answer_prior",
-    "uniform_category_prior",
-    "expected_reliability",
-    "effective_reliability",
-    "update_category_posterior_on_response",
-    "update_answer_posterior",
-    "update_reliability_table",
     "ScoringRule",
     "REWARD_CORRECT",
     "PENALTY_WRONG",
     "REWARD_ABSTAIN",
     "ToolConfig",
-    "eu_submit",
-    "eu_abstain",
-    "eu_star",
-    "compute_voi",
     "ActionType",
     "Action",
-    "QuestionState",
-    "initial_question_state",
-    "select_action",
-    "apply_tool_response",
     "compute_reliability_updates",
-    "apply_reliability_updates",
+    "compute_binary_reliability_updates",
 ]

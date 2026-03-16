@@ -1,63 +1,35 @@
-"""Credence: Bayesian decision-theoretic agents."""
+"""Credence: Bayesian decision-theoretic agents.
 
-# Inference layer
-from credence.inference.beta_posterior import (
-    AnswerPosterior,
-    CategoryPosterior,
-    CoverageTable,
-    ReliabilityTable,
-    expected_coverage,
-    make_coverage_table,
-    make_reliability_table,
-    uniform_answer_prior,
-    uniform_category_prior,
-    effective_reliability,
-    expected_reliability,
-    update_answer_posterior,
-    update_category_posterior_on_response,
-    update_coverage_table,
-    update_reliability_table,
-)
+Inference is handled by the Julia Credence DSL via juliacall.
+This package provides the Python agent, types, and benchmark harness.
+"""
+
+# Types and configuration
 from credence.inference.voi import (
     ScoringRule,
     ToolConfig,
-    eu_submit,
-    eu_abstain,
-    eu_star,
-    compute_voi,
 )
 from credence.inference.decision import (
-    ActionType,
     Action,
-    QuestionState,
-    initial_question_state,
-    select_action,
-    apply_tool_response,
+    ActionType,
     compute_binary_reliability_updates,
     compute_reliability_updates,
-    apply_reliability_updates,
 )
+
+# Bridge
+from credence.julia_bridge import CredenceBridge
 
 # Agent
 from credence.agents.bayesian_agent import BayesianAgent
 from credence.agents.common import AgentResult, DecisionStep
 
 __all__ = [
-    # Beta posteriors
-    "AnswerPosterior", "CategoryPosterior", "CoverageTable", "ReliabilityTable",
-    "expected_coverage", "make_coverage_table",
-    "make_reliability_table", "uniform_answer_prior", "uniform_category_prior",
-    "effective_reliability", "expected_reliability",
-    "update_answer_posterior", "update_category_posterior_on_response",
-    "update_coverage_table", "update_reliability_table",
-    # VOI / EU
+    # Types
     "ScoringRule", "ToolConfig",
-    "eu_submit", "eu_abstain", "eu_star", "compute_voi",
-    # Decision loop
-    "ActionType", "Action", "QuestionState",
-    "initial_question_state", "select_action", "apply_tool_response",
+    "ActionType", "Action",
     "compute_binary_reliability_updates", "compute_reliability_updates",
-    "apply_reliability_updates",
+    # Bridge
+    "CredenceBridge",
     # Agent
     "BayesianAgent", "AgentResult", "DecisionStep",
 ]

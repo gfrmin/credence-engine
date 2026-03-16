@@ -1,20 +1,20 @@
 """Baseline agents: Random, AllTools, Oracle, SingleBestTool.
 
 These provide reference points for the benchmark. The OracleAgent uses the
-same inference layer as BayesianAgent but with true reliabilities pre-loaded,
+same Julia DSL backend as BayesianAgent but with true reliabilities pre-loaded,
 giving an upper bound on what EU maximisation can achieve.
 """
 
 from __future__ import annotations
 
+import random
 from collections import Counter
-
-import numpy as np
 
 from credence.agents.common import DecisionStep
 from credence.inference.decision import Action, ActionType
 from credence.inference.voi import ToolConfig
 from credence.environment.tools import SimulatedTool
+from credence.julia_bridge import CredenceBridge
 
 # Reuse BayesianAgent's full decision machinery for the oracle
 from credence.agents.bayesian_agent import BayesianAgent
@@ -26,7 +26,7 @@ class RandomAgent:
     def __init__(self, num_tools: int, seed: int = 0, name: str = "random"):
         self.name = name
         self._num_tools = num_tools
-        self._rng = np.random.default_rng(seed)
+        self._rng = random.Random(seed)
         self._candidates: tuple[str, ...] = ()
         self._tool_responses: dict[int, int | None] = {}
         self._queried: bool = False
@@ -47,17 +47,16 @@ class RandomAgent:
         self._step += 1
         if not self._queried:
             self._queried = True
-            tool_idx = int(self._rng.integers(self._num_tools))
+            tool_idx = self._rng.randrange(self._num_tools)
             action = Action(ActionType.QUERY, tool_idx=tool_idx)
         else:
-            # Submit: use tool response if available, else random candidate
             answer = None
             for resp in self._tool_responses.values():
                 if resp is not None:
                     answer = resp
                     break
             if answer is None:
-                answer = int(self._rng.integers(len(self._candidates)))
+                answer = self._rng.randrange(len(self._candidates))
             action = Action(ActionType.SUBMIT, answer_idx=answer)
 
         self._trace.append(DecisionStep(
@@ -134,27 +133,28 @@ class AllToolsAgent:
 class OracleAgent(BayesianAgent):
     """Knows true tool reliabilities. Upper bound on EU maximisation.
 
-    Uses exactly the same inference layer as BayesianAgent, but pre-loads
-    the reliability table with the true values (as if it had observed
+    Uses exactly the same Julia DSL backend as BayesianAgent, but pre-loads
+    the reliability states with the true values (as if it had observed
     infinitely many questions). No learning occurs.
     """
 
     def __init__(
         self,
+        bridge: CredenceBridge,
         tools: list[SimulatedTool],
         tool_configs: list[ToolConfig],
         category_names: tuple[str, ...] = ("factual", "numerical", "recent_events", "misconceptions", "reasoning"),
         name: str = "oracle",
     ):
-        super().__init__(tool_configs=tool_configs, categories=category_names, name=name)
-        # Set reliability table to true values with strong pseudo-counts
-        # Beta(100*r, 100*(1-r)) has mean r and tight concentration
-        n_pseudo = 100.0
+        super().__init__(bridge=bridge, tool_configs=tool_configs, categories=category_names, name=name)
+
+        # Pre-load reliability states with true values using tight Beta priors
         for t_idx, tool in enumerate(tools):
-            for c_idx, cat in enumerate(category_names):
-                r = tool.reliability_by_category.get(cat, 0.0)
-                self.reliability_table[t_idx, c_idx, 0] = max(0.01, n_pseudo * r)
-                self.reliability_table[t_idx, c_idx, 1] = max(0.01, n_pseudo * (1.0 - r))
+            reliabilities = [
+                tool.reliability_by_category.get(cat, 0.0)
+                for cat in category_names
+            ]
+            self.rel_states[t_idx] = bridge.make_oracle_rel_state(reliabilities)
 
     def on_question_end(self, was_correct: bool | None) -> None:
         # Oracle does NOT update — it already knows the true reliabilities
