@@ -6,10 +6,12 @@
 benchmark demonstrating that decision theory outperforms prompt engineering for
 tool-using agents.
 
+All Bayesian inference (conditioning, expected utility, value of information) runs in
+the Julia Credence DSL via `juliacall`. Python keeps host concerns: tool queries,
+benchmark loop, persistence, and LangChain comparison baselines.
+
 The library provides domain-agnostic Bayesian agents: categories, tools, scoring rules,
-and category inference are all injected — the agent and inference layer have no hardcoded
-domain knowledge. The benchmark instantiates this library for a multi-tool QA task and
-compares against LangChain ReAct agents.
+and category inference are all injected — the agent has no hardcoded domain knowledge.
 
 ---
 
@@ -61,21 +63,37 @@ Every parameter in the Bayesian agent must be justified:
 
 ## Architecture Overview
 
+```
+Python (credence-engine)              Julia (credence DSL)
+┌──────────────────────┐              ┌──────────────────────────┐
+│ BayesianAgent        │              │ credence_agent.bdsl      │
+│   choose_action      │─juliacall──→ │   agent-step             │
+│   on_tool_response   │              │   answer-kernel           │
+│   on_question_end    │              │   update-on-response      │
+│                      │              ├──────────────────────────┤
+│ CredenceBridge       │              │ host helpers (Julia)     │
+│   (lazy juliacall)   │              │   update_beta_state      │
+│                      │              │   marginalize_betas      │
+│ Benchmark harness    │              │   initial_rel_state      │
+│ LangChain baselines  │              │   initial_cov_state      │
+│ Metrics              │              │   extract_reliability_means│
+└──────────────────────┘              └──────────────────────────┘
+```
+
 Everything lives under the `credence` package (PyPI: `credence-agents`).
 
 ```
 credence/
 ├── credence/                    # The package
 │   ├── __init__.py              # Public API re-exports
-│   ├── py.typed
-│   ├── inference/               # Domain-agnostic inference layer
-│   │   ├── beta_posterior.py    # Beta-Bernoulli reliability tracking
-│   │   ├── voi.py               # Value of information, ScoringRule, ToolConfig
-│   │   └── decision.py          # EU-based decision logic
+│   ├── julia_bridge.py          # CredenceBridge: lazy juliacall wrapper
+│   ├── inference/               # Types and feedback logic (computation in Julia)
+│   │   ├── voi.py               # ScoringRule, ToolConfig (types only)
+│   │   └── decision.py          # ActionType, Action, reliability update mapping
 │   ├── agents/
-│   │   ├── bayesian_agent.py    # Domain-agnostic Bayesian agent
-│   │   ├── common.py            # Shared agent interface (AgentResult, DecisionStep)
-│   │   ├── baselines.py         # Random, all-tools, oracle agents
+│   │   ├── bayesian_agent.py    # BayesianAgent (Julia DSL backend)
+│   │   ├── common.py            # Shared interface (AgentResult, DecisionStep)
+│   │   ├── baselines.py         # Random, all-tools, oracle, single-best agents
 │   │   ├── langchain_agent.py   # Standard LangChain ReAct agent
 │   │   └── langchain_enhanced.py # LangChain with best-effort prompting
 │   ├── environment/             # Benchmark-specific
@@ -92,8 +110,24 @@ credence/
 │   ├── run_drift.py             # Extension: tool reliability drift
 │   └── run_ablation.py          # Ablation studies
 ├── results/                     # Generated plots and data
-└── pyproject.toml               # Core deps vs [benchmark] vs [dev] extras
+└── pyproject.toml               # juliacall + numpy; [benchmark] extras for LangChain
 ```
+
+### How it works
+
+The `CredenceBridge` lazily loads Julia, the Credence module, and the BDSL agent spec
+on first use. `BayesianAgent` maintains Julia objects (CategoricalMeasure for answer
+beliefs, MixtureMeasure of ProductMeasure of BetaMeasure for per-tool reliability/coverage
+state) and calls DSL functions through the bridge:
+
+- `agent-step` — VOI + EU maximisation → action selection
+- `answer-kernel` — observation model from reliability measure
+- `update-on-response` — Bayesian conditioning on tool response
+- `update_beta_state` — structured FactorSelector conditioning for reliability/coverage
+- `marginalize_betas` — effective per-tool reliability from mixture state
+
+Python handles the host loop: mapping post-question feedback to per-tool correctness
+labels (`compute_reliability_updates`), then calling `update_beta_state` for each tool.
 
 ### Decoupled Architecture
 
@@ -101,23 +135,33 @@ The `BayesianAgent` constructor accepts injected domain knowledge:
 
 ```python
 BayesianAgent(
-    tool_configs: list[ToolConfig],        # Tool names and costs
-    categories: tuple[str, ...] | None,    # Domain categories (injected)
-    category_infer_fn: Callable | None,    # Question text → category prior (injected)
-    forgetting: float = 1.0,               # Exponential forgetting rate
+    bridge: CredenceBridge,                    # Julia bridge (lazy-loads on first use)
+    tool_configs: list[ToolConfig],            # Tool costs + coverage vectors
+    categories: tuple[str, ...] | None,        # Domain categories (injected)
+    category_infer_fn: Callable | None,        # Question text → category prior (injected)
+    forgetting: float = 1.0,                   # Exponential forgetting rate
 )
 ```
 
-The inference layer (`beta_posterior.py`, `voi.py`, `decision.py`) works with integer
-indices for tools and categories — no domain strings. `ScoringRule` and `ToolConfig`
-are the only configuration types needed to parameterise the entire decision loop.
-
-`make_keyword_category_infer_fn()` in `categories.py` is a convenience for the benchmark;
-custom domains provide their own `category_infer_fn`.
+`ScoringRule` and `ToolConfig` are the only configuration types needed to parameterise
+the entire decision loop. `make_keyword_category_infer_fn()` in `categories.py` is a
+convenience for the benchmark; custom domains provide their own `category_infer_fn`.
 
 ---
 
 ## Common Mistakes to Avoid
+
+### WRONG: Reimplementing inference in Python
+```python
+# BAD — duplicating Julia's exact Bayesian computation
+posterior = prior * likelihood / marginal
+```
+
+### RIGHT: Call the DSL through the bridge
+```python
+# GOOD — all inference in Julia
+answer_measure = bridge.update_on_response(answer_measure, kernel, response)
+```
 
 ### WRONG: Hardcoding domain knowledge in the agent
 ```python
@@ -130,59 +174,26 @@ if question.looks_numerical():
 ```python
 # GOOD — domain categories and inference injected at construction
 agent = BayesianAgent(
+    bridge=bridge,
     tool_configs=tool_configs,
     categories=("factual", "numerical", "recent", "misconception", "reasoning"),
     category_infer_fn=my_category_infer_fn,
 )
-# Tool selection happens via EU maximisation inside select_action()
-```
-
-### WRONG: Treating LLM classification as certain
-```python
-# BAD — trusting LLM category without uncertainty
-category = llm.classify(question)  # treated as ground truth
-```
-
-### RIGHT: Category as uncertain observation
-```python
-# GOOD — LLM classification updates beliefs, doesn't determine them
-category_distribution = update_category_beliefs(
-    prior=uniform_over_categories,
-    observation=llm.classify(question),
-    llm_reliability=self.category_reliability
-)
-```
-
-### WRONG: Arbitrary verification threshold
-```python
-# BAD — magic number
-if confidence < 0.7:
-    cross_verify()
-```
-
-### RIGHT: VOI-driven verification
-```python
-# GOOD — cross-verify when EU says to
-voi_verify = expected_eu_after_query(tool_b) - current_eu
-if voi_verify > cost_tool_b:
-    cross_verify(tool_b)
+# Tool selection happens via EU maximisation in the Julia DSL
 ```
 
 ### WRONG: Making the LangChain agent deliberately bad
 ```python
 # BAD — strawman
 agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
-# with a terrible prompt
 ```
 
 ### RIGHT: Give LangChain every advantage
 ```python
-# GOOD — use the best available patterns
+# GOOD — use the best available patterns with a carefully crafted system prompt
 agent = initialize_agent(
     tools, llm,
     agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-    # with a carefully crafted system prompt that explains
-    # the scoring, tool characteristics, and the value of abstention
 )
 ```
 
@@ -190,19 +201,29 @@ agent = initialize_agent(
 
 ## Testing Strategy
 
-1. **Unit test the inference layer first** — Beta posteriors, VOI calculations, decision logic
-2. **Test with a trivial environment** — 2 tools, 5 questions, known reliabilities
-3. **Verify against oracle** — with true reliabilities given, Bayesian agent should match oracle
-4. **Then integrate** — full benchmark with all agents
+1. **Julia DSL tests pass first** — `julia ~/git/credence/test/test.jl` and `test_host.jl`
+2. **Python type/feedback tests** — `test_decision.py` (no Julia needed)
+3. **Agent integration tests** — `test_bayesian_agent.py` (needs Julia via bridge)
+4. **Baseline comparison tests** — `test_baselines.py` (Oracle, Random, AllTools, SingleBest)
+5. **Benchmark harness tests** — `test_benchmark.py` (mock agents, no Julia)
+
+Run all: `PYTHON_JULIACALL_HANDLE_SIGNALS=yes uv run python -m pytest tests/ -v`
 
 ---
 
 ## Key Invariants
 
 - VOI is always non-negative (information can't hurt in expectation)
-- Beta posteriors are always valid (alpha > 0, beta > 0)
-- EU(submit) + EU(abstain) + EU(query) must be computed over the SAME belief state
+- All Bayesian computation runs in Julia — Python never modifies measure weights
+- EU(submit) + EU(abstain) + EU(query) computed over the SAME belief state
 - Tool costs are subtracted from EU(query), not from score retrospectively
 - Ground truth for reliability updates: ONLY from final answer feedback
 - The Bayesian agent never "peeks" at true tool reliability
-- The agent and inference layer contain NO domain-specific constants
+- The agent has NO domain-specific constants
+- PythonCall uses 0-based indexing for Julia arrays/tuples accessed from Python
+
+## Dependencies
+
+- **juliacall** — Python-Julia bridge (lazy-loads Julia on first use)
+- **numpy** — used by benchmark/environment for coverage vectors and category priors
+- **Julia Credence DSL** — at `~/git/credence/` (or pass paths to CredenceBridge)
