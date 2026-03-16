@@ -54,10 +54,7 @@ class BayesianAgent:
         self._category_infer_fn = category_infer_fn
 
         # Julia state: per-tool MixtureMeasures + category belief
-        self.rel_states = [
-            bridge.initial_rel_state(self._num_categories)
-            for _ in tool_configs
-        ]
+        self.rel_states = [bridge.initial_rel_state(self._num_categories) for _ in tool_configs]
         self.cov_states = [
             bridge.initial_cov_state(self._num_categories, tc.coverage_by_category)
             for tc in tool_configs
@@ -77,7 +74,10 @@ class BayesianAgent:
     # --- Benchmark Agent protocol ---
 
     def on_question_start(
-        self, question_id: str, candidates: tuple[str, ...], num_tools: int,
+        self,
+        question_id: str,
+        candidates: tuple[str, ...],
+        num_tools: int,
         question_text: str = "",
     ) -> None:
         self._n_answers = len(candidates)
@@ -94,25 +94,55 @@ class BayesianAgent:
         self._step += 1
 
         bridge = self.bridge
+
+        # All tools exhausted — decide submit vs abstain from current posterior
+        if not self._available:
+            ans_w = bridge.weights(self._answer_measure)
+            best_idx = max(range(len(ans_w)), key=lambda i: ans_w[i])
+            p_best = ans_w[best_idx]
+            eu_submit = (
+                p_best * self.scoring.reward_correct + (1 - p_best) * self.scoring.penalty_wrong
+            )
+            eu_abstain = self.scoring.reward_abstain
+
+            if eu_submit >= eu_abstain:
+                action = Action(ActionType.SUBMIT, answer_idx=best_idx)
+                chosen = f"submit({best_idx})"
+            else:
+                action = Action(ActionType.ABSTAIN)
+                chosen = "abstain"
+
+            self._trace.append(
+                DecisionStep(
+                    step=self._step,
+                    eu_submit=eu_submit,
+                    eu_abstain=eu_abstain,
+                    eu_query={},
+                    chosen_action=chosen,
+                )
+            )
+            return action
+
         cat_w = bridge.weights(self.cat_belief)
 
         # Build per-tool reliability measures and coverage probs for available tools
         rel_measures = [
-            bridge.marginalize_betas(self.rel_states[t], cat_w)
-            for t in self._available
+            bridge.marginalize_betas(self.rel_states[t], cat_w) for t in self._available
         ]
         cov_probs = [
-            bridge.expect_identity(
-                bridge.marginalize_betas(self.cov_states[t], cat_w)
-            )
+            bridge.expect_identity(bridge.marginalize_betas(self.cov_states[t], cat_w))
             for t in self._available
         ]
         costs = [self.tool_configs[t].cost for t in self._available]
 
         # Call DSL agent-step
         action_type, action_arg = bridge.agent_step(
-            self._answer_measure, rel_measures, costs, cov_probs,
-            self.scoring.reward_correct, self.scoring.reward_abstain,
+            self._answer_measure,
+            rel_measures,
+            costs,
+            cov_probs,
+            self.scoring.reward_correct,
+            self.scoring.reward_abstain,
             self.scoring.penalty_wrong,
         )
 
@@ -140,13 +170,15 @@ class BayesianAgent:
         eu_sub = p_best * self.scoring.reward_correct + (1 - p_best) * self.scoring.penalty_wrong
         eu_abs = self.scoring.reward_abstain
 
-        self._trace.append(DecisionStep(
-            step=self._step,
-            eu_submit=eu_sub,
-            eu_abstain=eu_abs,
-            eu_query={},  # VOI details are inside Julia
-            chosen_action=chosen,
-        ))
+        self._trace.append(
+            DecisionStep(
+                step=self._step,
+                eu_submit=eu_sub,
+                eu_abstain=eu_abs,
+                eu_query={},  # VOI details are inside Julia
+                chosen_action=chosen,
+            )
+        )
 
         return action
 
@@ -159,7 +191,9 @@ class BayesianAgent:
 
             # Update coverage state (responded = 1.0)
             self.cov_states[tool_idx], self.cat_belief = bridge.update_beta_state(
-                self.cov_states[tool_idx], self.cat_belief, 1.0,
+                self.cov_states[tool_idx],
+                self.cat_belief,
+                1.0,
             )
 
             # Update answer belief via DSL
@@ -167,14 +201,18 @@ class BayesianAgent:
             rel_m = bridge.marginalize_betas(self.rel_states[tool_idx], cat_w)
             k = bridge.answer_kernel(rel_m, self._n_answers)
             self._answer_measure = bridge.update_on_response(
-                self._answer_measure, k, float(response),
+                self._answer_measure,
+                k,
+                float(response),
             )
         else:
             self._tool_responses[tool_idx] = None
 
             # Update coverage state (not responded = 0.0)
             self.cov_states[tool_idx], self.cat_belief = bridge.update_beta_state(
-                self.cov_states[tool_idx], self.cat_belief, 0.0,
+                self.cov_states[tool_idx],
+                self.cat_belief,
+                0.0,
             )
 
         # Remove from available
@@ -192,7 +230,9 @@ class BayesianAgent:
 
         # Map feedback to per-tool correctness
         updates = compute_reliability_updates(
-            submitted, was_correct, self._tool_responses,
+            submitted,
+            was_correct,
+            self._tool_responses,
         )
 
         # Update reliability states via Julia
@@ -202,7 +242,9 @@ class BayesianAgent:
                 continue
             obs = 1.0 if was_tool_correct else 0.0
             self.rel_states[tool_idx], self.cat_belief = bridge.update_beta_state(
-                self.rel_states[tool_idx], self.cat_belief, obs,
+                self.rel_states[tool_idx],
+                self.cat_belief,
+                obs,
             )
 
     def get_belief_snapshot(self) -> dict | None:
