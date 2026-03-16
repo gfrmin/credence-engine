@@ -28,6 +28,7 @@ from credence.environment.benchmark import BenchmarkResult
 from credence.environment.questions import get_questions
 from credence.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
 from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
@@ -54,13 +55,14 @@ def run_drift_experiment(
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
     degraded_a = make_degraded_tool_a(spec_tools[0])
+    bridge = CredenceBridge()
 
     _infer_fn = make_keyword_category_infer_fn()
     agent_factories = [
-        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
-        ("bayesian_forget", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=0.95,
+        ("oracle", lambda: OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
+        ("bayesian_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=0.95,
                                                    name="bayesian_forget")),
-        ("bayesian_no_forget", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=1.0,
+        ("bayesian_no_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=1.0,
                                                       name="bayesian_no_forget")),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),
@@ -94,7 +96,7 @@ def run_drift_experiment(
             num_tools = 4
 
             # Per-question reliability trace for Tool A (only for Bayesian agents)
-            is_bayesian = hasattr(agent, "reliability_table")
+            is_bayesian = hasattr(agent, "rel_states")
             seed_trace = []  # list of arrays, one per question
 
             for q_idx, question in enumerate(questions):
@@ -147,9 +149,8 @@ def run_drift_experiment(
 
                 # Snapshot Tool A's learned E[r] per category after this question
                 if is_bayesian:
-                    t = agent.reliability_table
-                    er = t[0, :, 0] / (t[0, :, 0] + t[0, :, 1])  # E[Beta] for tool 0
-                    seed_trace.append(er.copy())
+                    er = np.array(bridge.extract_reliability_means(agent.rel_states[0]))
+                    seed_trace.append(er)
 
             if is_bayesian:
                 if agent_name not in reliability_traces:

@@ -45,17 +45,18 @@ from credence.environment.benchmark import BenchmarkResult, run_benchmark
 from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
 from credence.environment.questions import get_questions
 from credence.environment.tools import make_spec_tools, tool_config_for
+from credence.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
 
 
-def make_agents(spec_tools, tool_configs, include_langchain: bool = False):
+def make_agents(spec_tools, tool_configs, bridge: CredenceBridge, include_langchain: bool = False):
     """Create all agents to benchmark. Returns list of (name, factory_fn) pairs."""
     _infer_fn = make_keyword_category_infer_fn()
     agents = [
-        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
-        ("bayesian", lambda: BayesianAgent(tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("oracle", lambda: OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
+        ("bayesian", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("all_tools", lambda: AllToolsAgent(num_tools=4)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),
@@ -79,7 +80,8 @@ def run_experiment(
     """Run all agents across n_seeds question orderings."""
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
-    agent_factories = make_agents(spec_tools, tool_configs, include_langchain)
+    bridge = CredenceBridge()
+    agent_factories = make_agents(spec_tools, tool_configs, bridge, include_langchain)
 
     results: dict[str, list[BenchmarkResult]] = {}
 

@@ -24,6 +24,7 @@ from credence.agents.baselines import (
 from credence.agents.bayesian_agent import BayesianAgent
 from credence.agents.langchain_agent import LangChainAgent
 from credence.agents.langchain_enhanced import LangChainEnhancedAgent
+from credence.julia_bridge import CredenceBridge
 from credence.analysis.metrics import (
     abstention_rate,
     accuracy,
@@ -95,10 +96,11 @@ def run_stationary_full() -> dict[str, list[BenchmarkResult]]:
     """Run stationary: 20 seeds for fast agents, 5 for LangChain."""
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
+    bridge = CredenceBridge()
 
     fast_agents = [
-        ("oracle", lambda: OracleAgent(tools=list(spec_tools), tool_configs=tool_configs)),
-        ("bayesian", lambda: BayesianAgent(tool_configs=tool_configs)),
+        ("oracle", lambda: OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs)),
+        ("bayesian", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs)),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("all_tools", lambda: AllToolsAgent(num_tools=4)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),
