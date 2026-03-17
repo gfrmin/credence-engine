@@ -139,6 +139,17 @@ class CredenceBridge:
         cats = self._make_float_vector(range(n_categories))
         return jl.CategoricalMeasure(jl.Finite(cats))
 
+    def make_warm_rel_state(self, n_categories, alpha=7.0, beta=3.0):
+        """Create a rel_state with Beta(alpha, beta) per category (for warm-starting)."""
+        jl = self.jl
+        beta_strs = [f"BetaMeasure({float(alpha)}, {float(beta)})"] * n_categories
+        code = (
+            "let factors = Measure[" + ", ".join(beta_strs) + "]; "
+            "prod = ProductMeasure(factors); "
+            "MixtureMeasure(prod.space, Measure[prod], Float64[0.0]) end"
+        )
+        return jl.seval(code)  # noqa: S307 — trusted numeric literals
+
     def make_oracle_rel_state(self, reliabilities):
         """Create a rel_state with known reliabilities (for OracleAgent).
 
