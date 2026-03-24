@@ -1,7 +1,7 @@
-"""Full comparison: 20-seed stationary + drift, 5-seed LangChain.
+"""Full comparison: 20-seed stationary + drift, 20-seed LangChain.
 
 Runs non-LLM agents with full statistical power (20 seeds) and LangChain
-agents with reduced seeds (5) since Ollama is slow.
+agents with 20 seeds.
 
 Usage:
     uv run python -m experiments.run_full_comparison
@@ -32,6 +32,7 @@ from credence.analysis.metrics import (
     expected_calibration_error,
     tool_calls_per_question,
     total_score,
+    wall_time_per_question,
 )
 from credence.analysis.visualisation import (
     calibration_plot,
@@ -60,13 +61,13 @@ from experiments.run_drift import (
 
 RESULTS_DIR = Path("results")
 N_SEEDS_FAST = 20
-N_SEEDS_LLM = 5
+N_SEEDS_LLM = 20
 
 
 def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
     header = (
         f"{'Agent':<22} {'N':>3} {'Score':>12} {'Accuracy':>12} {'Abstain%':>10} "
-        f"{'Tools/Q':>10} {'CostEff':>10} {'ECE':>10}"
+        f"{'Tools/Q':>10} {'CostEff':>10} {'ECE':>10} {'Time/Q':>12}"
     )
     lines = [header, "-" * len(header)]
 
@@ -78,6 +79,7 @@ def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
         tools_q = [tool_calls_per_question(r) for r in runs]
         cost_effs = [cost_efficiency(r) for r in runs]
         eces = [expected_calibration_error(r) for r in runs]
+        times_q = [wall_time_per_question(r) for r in runs]
 
         lines.append(
             f"{agent_name:<22} {n:>3} "
@@ -86,14 +88,15 @@ def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
             f"{np.mean(abstains):>7.3f}±{np.std(abstains):.3f} "
             f"{np.mean(tools_q):>7.2f}±{np.std(tools_q):.2f} "
             f"{np.mean(cost_effs):>7.2f}±{np.std(cost_effs):.2f} "
-            f"{np.mean(eces):>7.3f}±{np.std(eces):.3f}"
+            f"{np.mean(eces):>7.3f}±{np.std(eces):.3f} "
+            f"{np.mean(times_q):>7.2f}±{np.std(times_q):.2f}"
         )
 
     return "\n".join(lines)
 
 
 def run_stationary_full() -> dict[str, list[BenchmarkResult]]:
-    """Run stationary: 20 seeds for fast agents, 5 for LangChain."""
+    """Run stationary: 20 seeds for fast agents, 20 for LangChain."""
     spec_tools = make_spec_tools()
     tool_configs = [tool_config_for(t) for t in spec_tools]
     bridge = CredenceBridge()
@@ -122,7 +125,7 @@ def run_stationary_full() -> dict[str, list[BenchmarkResult]]:
             results.setdefault(name, []).append(result)
         print(f"    Seed {seed} done", file=sys.stderr)
 
-    # LangChain agents: 5 seeds
+    # LangChain agents: 20 seeds
     print(f"  Running LangChain agents ({N_SEEDS_LLM} seeds)...", file=sys.stderr)
     for seed in range(N_SEEDS_LLM):
         questions = get_questions(seed=seed)

@@ -17,7 +17,7 @@ from credence.agents.baselines import (
 from credence.agents.bayesian_agent import BayesianAgent
 from credence.agents.common import DecisionStep
 from credence.environment.benchmark import run_benchmark
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.environment.questions import Question, get_questions
 from credence.environment.tools import make_spec_tools, tool_config_for
 from credence.julia_bridge import CredenceBridge
@@ -173,7 +173,7 @@ class TestScoreOrdering:
         tool reliability is well-estimated.
         """
         oracle = OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs)
-        bayesian = BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=make_keyword_category_infer_fn())
+        bayesian = BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES)
 
         r_oracle = run_benchmark(oracle, spec_tools, questions_50, seed=42)
         r_bayesian = run_benchmark(bayesian, spec_tools, questions_50, seed=42)

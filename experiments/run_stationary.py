@@ -32,6 +32,7 @@ from credence.analysis.metrics import (
     expected_calibration_error,
     tool_calls_per_question,
     total_score,
+    wall_time_per_question,
 )
 from credence.analysis.visualisation import (
     abstention_analysis,
@@ -42,7 +43,7 @@ from credence.analysis.visualisation import (
     tool_selection_heatmap,
 )
 from credence.environment.benchmark import BenchmarkResult, run_benchmark
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.environment.questions import get_questions
 from credence.environment.tools import make_spec_tools, tool_config_for
 from credence.julia_bridge import CredenceBridge
@@ -53,10 +54,9 @@ RESULTS_DIR = Path("results")
 
 def make_agents(spec_tools, tool_configs, bridge: CredenceBridge, include_langchain: bool = False):
     """Create all agents to benchmark. Returns list of (name, factory_fn) pairs."""
-    _infer_fn = make_keyword_category_infer_fn()
     agents = [
         ("oracle", lambda: OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
-        ("bayesian", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn)),
+        ("bayesian", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES)),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("all_tools", lambda: AllToolsAgent(num_tools=4)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),
@@ -105,7 +105,7 @@ def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
     """Format a summary table of all agents' metrics."""
     header = (
         f"{'Agent':<20} {'Score':>10} {'Accuracy':>10} {'Abstain%':>10} "
-        f"{'Tools/Q':>10} {'CostEff':>10} {'ECE':>10}"
+        f"{'Tools/Q':>10} {'CostEff':>10} {'ECE':>10} {'Time/Q':>12}"
     )
     lines = [header, "-" * len(header)]
 
@@ -116,6 +116,7 @@ def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
         tools_q = [tool_calls_per_question(r) for r in runs]
         cost_effs = [cost_efficiency(r) for r in runs]
         eces = [expected_calibration_error(r) for r in runs]
+        times_q = [wall_time_per_question(r) for r in runs]
 
         lines.append(
             f"{agent_name:<20} "
@@ -124,7 +125,8 @@ def summary_table(results: dict[str, list[BenchmarkResult]]) -> str:
             f"{np.mean(abstains):>7.3f}±{np.std(abstains):.3f} "
             f"{np.mean(tools_q):>7.2f}±{np.std(tools_q):.2f} "
             f"{np.mean(cost_effs):>7.2f}±{np.std(cost_effs):.2f} "
-            f"{np.mean(eces):>7.3f}±{np.std(eces):.3f}"
+            f"{np.mean(eces):>7.3f}±{np.std(eces):.3f} "
+            f"{np.mean(times_q):>7.2f}±{np.std(times_q):.2f}"
         )
 
     return "\n".join(lines)
@@ -142,6 +144,7 @@ def save_results(results: dict[str, list[BenchmarkResult]], out_dir: Path) -> No
                 "total_score": r.total_score,
                 "total_reward": r.total_reward,
                 "total_tool_cost": r.total_tool_cost,
+                "wall_time_s": r.wall_time_s,
                 "records": [
                     {
                         "question_id": rec.question_id,

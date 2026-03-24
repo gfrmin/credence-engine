@@ -22,7 +22,7 @@ from credence.agents.common import DecisionStep
 from credence.analysis.metrics import accuracy, total_score, tool_calls_per_question
 from credence.analysis.visualisation import score_comparison_bar, tool_calls_comparison
 from credence.environment.benchmark import BenchmarkResult, run_benchmark
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.environment.questions import get_questions
 from credence.environment.tools import make_spec_tools, tool_config_for
 from credence.inference.decision import Action, ActionType
@@ -131,14 +131,13 @@ class SingleToolAgent(BayesianAgent):
 
 def make_ablation_agents(tool_configs, bridge):
     """Create all ablation variants."""
-    _infer_fn = make_keyword_category_infer_fn()
     return [
-        ("full_agent", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="full_agent")),
-        ("no_voi", lambda: NoVOIAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_voi")),
+        ("full_agent", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="full_agent")),
+        ("no_voi", lambda: NoVOIAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="no_voi")),
         ("no_category", lambda: NoCategoryAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="no_category")),
-        ("no_abstention", lambda: NoAbstentionAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_abstention")),
-        ("fixed_reliability", lambda: FixedReliabilityAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="fixed_reliability")),
-        ("no_crossverify", lambda: SingleToolAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, name="no_crossverify")),
+        ("no_abstention", lambda: NoAbstentionAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="no_abstention")),
+        ("fixed_reliability", lambda: FixedReliabilityAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="fixed_reliability")),
+        ("no_crossverify", lambda: SingleToolAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, name="no_crossverify")),
     ]
 
 

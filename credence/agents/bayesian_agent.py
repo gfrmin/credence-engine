@@ -7,8 +7,6 @@ state tracking, and post-question reliability updates.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from credence.agents.common import AgentResult, DecisionStep
 from credence.inference.decision import (
     Action,
@@ -38,7 +36,6 @@ class BayesianAgent:
         tool_configs: list[ToolConfig],
         categories: tuple[str, ...] | None = None,
         num_categories: int = 5,
-        category_infer_fn: Callable[[str], list[float]] | None = None,
         forgetting: float = 1.0,
         name: str = "bayesian",
         scoring: ScoringRule = _DEFAULT_SCORING,
@@ -51,7 +48,6 @@ class BayesianAgent:
         self.num_tools = len(tool_configs)
         self._num_categories = len(categories) if categories else num_categories
         self._categories = categories
-        self._category_infer_fn = category_infer_fn
 
         # Julia state: per-tool MixtureMeasures + category belief
         self.rel_states = [bridge.initial_rel_state(self._num_categories) for _ in tool_configs]

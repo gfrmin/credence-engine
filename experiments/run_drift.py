@@ -27,7 +27,7 @@ from credence.agents.bayesian_agent import BayesianAgent
 from credence.environment.benchmark import BenchmarkResult
 from credence.environment.questions import get_questions
 from credence.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.julia_bridge import CredenceBridge
 
 
@@ -57,12 +57,11 @@ def run_drift_experiment(
     degraded_a = make_degraded_tool_a(spec_tools[0])
     bridge = CredenceBridge()
 
-    _infer_fn = make_keyword_category_infer_fn()
     agent_factories = [
         ("oracle", lambda: OracleAgent(bridge=bridge, tools=list(spec_tools), tool_configs=tool_configs, category_names=CATEGORIES)),
-        ("bayesian_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=0.95,
+        ("bayesian_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, forgetting=0.95,
                                                    name="bayesian_forget")),
-        ("bayesian_no_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, category_infer_fn=_infer_fn, forgetting=1.0,
+        ("bayesian_no_forget", lambda: BayesianAgent(bridge=bridge, tool_configs=tool_configs, categories=CATEGORIES, forgetting=1.0,
                                                       name="bayesian_no_forget")),
         ("single_best", lambda: SingleBestToolAgent(tool_idx=0)),
         ("random", lambda: RandomAgent(num_tools=4, seed=0)),

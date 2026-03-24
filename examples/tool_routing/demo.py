@@ -17,7 +17,7 @@ from collections import Counter
 import numpy as np
 
 from credence.agents.bayesian_agent import BayesianAgent
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.environment.questions import Question, get_questions
 from credence.environment.tools import ResponseType, query_tool, tool_config_for
 from credence.inference.voi import ScoringRule
@@ -78,7 +78,6 @@ def run_demo(num_questions: int = 10, latency_weight: float = 0.01, seed: int = 
     agent = BayesianAgent(
         tool_configs=tool_configs,
         categories=CATEGORIES,
-        category_infer_fn=make_keyword_category_infer_fn(CATEGORIES),
         scoring=scoring,
         name="credence-router",
     )

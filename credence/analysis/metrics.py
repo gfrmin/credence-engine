@@ -120,3 +120,10 @@ def learned_vs_true_reliability(
             tool_result[cat] = (learned, true_r)
         result[tool.name] = tool_result
     return result
+
+
+def wall_time_per_question(result: BenchmarkResult) -> float:
+    """Mean wall-clock seconds per question."""
+    if not result.records:
+        return 0.0
+    return result.wall_time_s / len(result.records)

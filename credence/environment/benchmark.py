@@ -6,6 +6,7 @@ tool calls), and computes scoring per SPEC §2.3.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Sequence
 from typing import NamedTuple, Protocol, runtime_checkable
 
@@ -54,6 +55,7 @@ class BenchmarkResult(NamedTuple):
     total_score: float
     total_tool_cost: float
     total_reward: float
+    wall_time_s: float = 0.0
 
 
 def run_benchmark(
@@ -68,6 +70,7 @@ def run_benchmark(
     records: list[QuestionRecord] = []
     total_reward = 0.0
     total_tool_cost = 0.0
+    t_start = time.perf_counter()
 
     for question in questions:
         agent.on_question_start(question.id, question.candidates, num_tools,
@@ -151,6 +154,8 @@ def run_benchmark(
                 ))
                 break
 
+    wall_time_s = time.perf_counter() - t_start
+
     return BenchmarkResult(
         agent_name=agent.name,
         seed=seed,
@@ -158,4 +163,5 @@ def run_benchmark(
         total_score=total_reward - total_tool_cost,
         total_tool_cost=total_tool_cost,
         total_reward=total_reward,
+        wall_time_s=wall_time_s,
     )

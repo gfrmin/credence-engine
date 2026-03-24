@@ -9,20 +9,16 @@ Hand-fed sequences with mock tools to verify:
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from credence.agents.bayesian_agent import BayesianAgent
-from credence.environment.categories import CATEGORIES, make_keyword_category_infer_fn
+from credence.environment.categories import CATEGORIES
 from credence.inference.decision import ActionType
 from credence.inference.voi import ToolConfig
 from credence.environment.tools import make_spec_tools, tool_config_for, query_tool, ResponseType
 from credence.environment.questions import Question, get_questions
 from credence.environment.benchmark import run_benchmark
 from credence.julia_bridge import CredenceBridge
-
-_infer_category_prior = make_keyword_category_infer_fn(CATEGORIES)
-
 
 # --- Helpers ---
 
@@ -32,7 +28,6 @@ def _spec_tool_configs() -> list[ToolConfig]:
 
 def _make_agent(bridge, **kwargs) -> BayesianAgent:
     kwargs.setdefault("categories", CATEGORIES)
-    kwargs.setdefault("category_infer_fn", _infer_category_prior)
     return BayesianAgent(bridge=bridge, tool_configs=_spec_tool_configs(), **kwargs)
 
 
@@ -42,35 +37,6 @@ def _make_q(qid: str, category: str, correct: int = 0, text: str = "") -> Questi
         candidates=("A", "B", "C", "D"),
         correct_index=correct, category=category, difficulty="medium",
     )
-
-
-# --- Category inference tests (pure Python, no bridge needed) ---
-
-class TestCategoryInference:
-    def test_numerical_keywords(self):
-        prior = _infer_category_prior("What is 17% of 4,230?")
-        assert CATEGORIES[np.argmax(prior)] == "numerical"
-
-    def test_recent_keywords(self):
-        prior = _infer_category_prior("Who won the 2024 Nobel Prize?")
-        assert CATEGORIES[np.argmax(prior)] == "recent_events"
-
-    def test_misconception_keywords(self):
-        prior = _infer_category_prior("Is it true that we only use 10 percent of the brain?")
-        assert CATEGORIES[np.argmax(prior)] == "misconceptions"
-
-    def test_reasoning_keywords(self):
-        prior = _infer_category_prior("If all roses are flowers, can we conclude something?")
-        assert CATEGORIES[np.argmax(prior)] == "reasoning"
-
-    def test_factual_default(self):
-        prior = _infer_category_prior("Which country has the largest coastline?")
-        assert CATEGORIES[np.argmax(prior)] == "factual"
-
-    def test_returns_distribution(self):
-        prior = _infer_category_prior("Some question")
-        assert abs(prior.sum() - 1.0) < 1e-10
-        assert all(p > 0 for p in prior)
 
 
 # --- Hand-fed mock tool sequence (5 questions) ---
@@ -187,7 +153,7 @@ class TestBenchmarkProtocol:
         """Agent works with the benchmark harness."""
         tools = make_spec_tools()
         configs = [tool_config_for(t) for t in tools]
-        agent = BayesianAgent(bridge=bridge, tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
+        agent = BayesianAgent(bridge=bridge, tool_configs=configs, categories=CATEGORIES)
         questions = get_questions(seed=42)[:10]
         result = run_benchmark(agent, tools, questions, seed=42)
         assert len(result.records) == 10
@@ -196,7 +162,7 @@ class TestBenchmarkProtocol:
     def test_belief_snapshot_present(self, bridge):
         tools = make_spec_tools()
         configs = [tool_config_for(t) for t in tools]
-        agent = BayesianAgent(bridge=bridge, tool_configs=configs, categories=CATEGORIES, category_infer_fn=_infer_category_prior)
+        agent = BayesianAgent(bridge=bridge, tool_configs=configs, categories=CATEGORIES)
         questions = get_questions(seed=42)[:3]
         result = run_benchmark(agent, tools, questions, seed=42)
         for rec in result.records:
