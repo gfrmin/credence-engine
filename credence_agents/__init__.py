@@ -5,11 +5,11 @@ This package provides the Python agent, types, and benchmark harness.
 """
 
 # Types and configuration
-from credence.inference.voi import (
+from credence_agents.inference.voi import (
     ScoringRule,
     ToolConfig,
 )
-from credence.inference.decision import (
+from credence_agents.inference.decision import (
     Action,
     ActionType,
     compute_binary_reliability_updates,
@@ -17,11 +17,11 @@ from credence.inference.decision import (
 )
 
 # Bridge
-from credence.julia_bridge import CredenceBridge
+from credence_agents.julia_bridge import CredenceBridge
 
 # Agent
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.agents.common import AgentResult, DecisionStep
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.agents.common import AgentResult, DecisionStep
 
 __all__ = [
     # Types

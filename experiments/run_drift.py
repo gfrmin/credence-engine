@@ -17,18 +17,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from credence.agents.baselines import (
+from credence_agents.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.environment.benchmark import BenchmarkResult
-from credence.environment.questions import get_questions
-from credence.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
-from credence.environment.categories import CATEGORIES
-from credence.julia_bridge import CredenceBridge
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.environment.benchmark import BenchmarkResult
+from credence_agents.environment.questions import get_questions
+from credence_agents.environment.tools import SimulatedTool, make_spec_tools, tool_config_for
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
@@ -80,13 +80,13 @@ def run_drift_experiment(
             agent = factory()
 
             # Manual benchmark loop with tool swap at DRIFT_POINT
-            from credence.environment.benchmark import (
+            from credence_agents.environment.benchmark import (
                 QuestionRecord,
                 BenchmarkResult as BR,
             )
-            from credence.environment.tools import query_tool, ResponseType
-            from credence.inference.voi import REWARD_CORRECT, PENALTY_WRONG, REWARD_ABSTAIN
-            from credence.inference.decision import ActionType
+            from credence_agents.environment.tools import query_tool, ResponseType
+            from credence_agents.inference.voi import REWARD_CORRECT, PENALTY_WRONG, REWARD_ABSTAIN
+            from credence_agents.inference.decision import ActionType
 
             q_rng = np.random.default_rng(seed)
             records = []

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "credence-agents"
-version = "0.3.0"
+version = "0.4.0"
 description = "Bayesian decision theory engine for AI agents — Beta posteriors, VOI, and EU maximisation. Foundation for credence-router."
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
@@ -41,7 +41,7 @@ Homepage = "https://github.com/gfrmin/credence"
 Repository = "https://github.com/gfrmin/credence"
 
 [tool.setuptools.packages.find]
-include = ["credence*"]
+include = ["credence_agents*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

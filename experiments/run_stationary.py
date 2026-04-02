@@ -18,14 +18,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from credence.agents.baselines import (
+from credence_agents.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.analysis.metrics import (
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.analysis.metrics import (
     abstention_rate,
     accuracy,
     cost_efficiency,
@@ -34,7 +34,7 @@ from credence.analysis.metrics import (
     total_score,
     wall_time_per_question,
 )
-from credence.analysis.visualisation import (
+from credence_agents.analysis.visualisation import (
     abstention_analysis,
     calibration_plot,
     cumulative_score_plot,
@@ -42,11 +42,11 @@ from credence.analysis.visualisation import (
     tool_calls_comparison,
     tool_selection_heatmap,
 )
-from credence.environment.benchmark import BenchmarkResult, run_benchmark
-from credence.environment.categories import CATEGORIES
-from credence.environment.questions import get_questions
-from credence.environment.tools import make_spec_tools, tool_config_for
-from credence.julia_bridge import CredenceBridge
+from credence_agents.environment.benchmark import BenchmarkResult, run_benchmark
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.environment.questions import get_questions
+from credence_agents.environment.tools import make_spec_tools, tool_config_for
+from credence_agents.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
@@ -63,8 +63,8 @@ def make_agents(spec_tools, tool_configs, bridge: CredenceBridge, include_langch
     ]
 
     if include_langchain:
-        from credence.agents.langchain_agent import LangChainAgent
-        from credence.agents.langchain_enhanced import LangChainEnhancedAgent
+        from credence_agents.agents.langchain_agent import LangChainAgent
+        from credence_agents.agents.langchain_enhanced import LangChainEnhancedAgent
         agents.extend([
             ("langchain_react", lambda: LangChainAgent()),
             ("langchain_enhanced", lambda: LangChainEnhancedAgent()),

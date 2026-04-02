@@ -10,14 +10,14 @@ from __future__ import annotations
 import random
 from collections import Counter
 
-from credence.agents.common import DecisionStep
-from credence.inference.decision import Action, ActionType
-from credence.inference.voi import ToolConfig
-from credence.environment.tools import SimulatedTool
-from credence.julia_bridge import CredenceBridge
+from credence_agents.agents.common import DecisionStep
+from credence_agents.inference.decision import Action, ActionType
+from credence_agents.inference.voi import ToolConfig
+from credence_agents.environment.tools import SimulatedTool
+from credence_agents.julia_bridge import CredenceBridge
 
 # Reuse BayesianAgent's full decision machinery for the oracle
-from credence.agents.bayesian_agent import BayesianAgent
+from credence_agents.agents.bayesian_agent import BayesianAgent
 
 
 class RandomAgent:

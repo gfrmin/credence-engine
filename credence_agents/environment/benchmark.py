@@ -12,10 +12,10 @@ from typing import NamedTuple, Protocol, runtime_checkable
 
 import numpy as np
 
-from credence.inference.decision import Action, ActionType
-from credence.inference.voi import PENALTY_WRONG, REWARD_ABSTAIN, REWARD_CORRECT
-from credence.environment.questions import Question
-from credence.environment.tools import SimulatedTool, query_tool, ResponseType
+from credence_agents.inference.decision import Action, ActionType
+from credence_agents.inference.voi import PENALTY_WRONG, REWARD_ABSTAIN, REWARD_CORRECT
+from credence_agents.environment.questions import Question
+from credence_agents.environment.tools import SimulatedTool, query_tool, ResponseType
 
 
 @runtime_checkable

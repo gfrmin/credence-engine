@@ -15,17 +15,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from credence.agents.baselines import (
+from credence_agents.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.agents.langchain_agent import LangChainAgent
-from credence.agents.langchain_enhanced import LangChainEnhancedAgent
-from credence.julia_bridge import CredenceBridge
-from credence.analysis.metrics import (
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.agents.langchain_agent import LangChainAgent
+from credence_agents.agents.langchain_enhanced import LangChainEnhancedAgent
+from credence_agents.julia_bridge import CredenceBridge
+from credence_agents.analysis.metrics import (
     abstention_rate,
     accuracy,
     cost_efficiency,
@@ -34,15 +34,15 @@ from credence.analysis.metrics import (
     total_score,
     wall_time_per_question,
 )
-from credence.analysis.visualisation import (
+from credence_agents.analysis.visualisation import (
     calibration_plot,
     cumulative_score_plot,
     score_comparison_bar,
     tool_selection_heatmap,
 )
-from credence.environment.benchmark import BenchmarkResult, run_benchmark
-from credence.environment.questions import get_questions
-from credence.environment.tools import make_spec_tools, tool_config_for
+from credence_agents.environment.benchmark import BenchmarkResult, run_benchmark
+from credence_agents.environment.questions import get_questions
+from credence_agents.environment.tools import make_spec_tools, tool_config_for
 
 from experiments.run_ablation import (
     ablation_table,

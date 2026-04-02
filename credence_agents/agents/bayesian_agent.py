@@ -7,14 +7,14 @@ state tracking, and post-question reliability updates.
 
 from __future__ import annotations
 
-from credence.agents.common import AgentResult, DecisionStep
-from credence.inference.decision import (
+from credence_agents.agents.common import AgentResult, DecisionStep
+from credence_agents.inference.decision import (
     Action,
     ActionType,
     compute_reliability_updates,
 )
-from credence.inference.voi import ScoringRule, ToolConfig
-from credence.julia_bridge import CredenceBridge
+from credence_agents.inference.voi import ScoringRule, ToolConfig
+from credence_agents.julia_bridge import CredenceBridge
 
 _DEFAULT_SCORING = ScoringRule()
 

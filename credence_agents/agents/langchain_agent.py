@@ -9,8 +9,8 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 
-from credence.agents.common import AgentResult, DecisionStep
-from credence.inference.decision import Action, ActionType
+from credence_agents.agents.common import AgentResult, DecisionStep
+from credence_agents.inference.decision import Action, ActionType
 
 # Tool descriptions matching SPEC §4.1
 TOOL_DESCRIPTIONS = (

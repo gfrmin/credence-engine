@@ -6,8 +6,8 @@ from collections import Counter
 
 import pytest
 
-from credence.environment.questions import QUESTION_BANK, Question, get_questions
-from credence.environment.categories import CATEGORIES
+from credence_agents.environment.questions import QUESTION_BANK, Question, get_questions
+from credence_agents.environment.categories import CATEGORIES
 
 
 class TestQuestionCount:

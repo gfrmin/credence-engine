@@ -4,7 +4,7 @@ Action selection and Bayesian updates are now in Julia. These tests cover
 the Python-side feedback-to-correctness mapping functions.
 """
 
-from credence.inference.decision import (
+from credence_agents.inference.decision import (
     compute_binary_reliability_updates,
     compute_reliability_updates,
 )

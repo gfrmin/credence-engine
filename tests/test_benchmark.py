@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from credence.inference.decision import Action, ActionType
-from credence.inference.voi import PENALTY_WRONG, REWARD_CORRECT
-from credence.environment.benchmark import run_benchmark, BenchmarkResult
-from credence.environment.questions import Question
-from credence.environment.tools import make_spec_tools
+from credence_agents.inference.decision import Action, ActionType
+from credence_agents.inference.voi import PENALTY_WRONG, REWARD_CORRECT
+from credence_agents.environment.benchmark import run_benchmark, BenchmarkResult
+from credence_agents.environment.questions import Question
+from credence_agents.environment.tools import make_spec_tools
 
 
 # --- Test helpers ---

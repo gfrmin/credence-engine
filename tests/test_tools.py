@@ -7,15 +7,15 @@ from collections import Counter
 import numpy as np
 import pytest
 
-from credence.environment.questions import Question
-from credence.environment.tools import (
+from credence_agents.environment.questions import Question
+from credence_agents.environment.tools import (
     ResponseType,
     SimulatedTool,
     make_spec_tools,
     query_tool,
     tool_config_for,
 )
-from credence.environment.categories import CATEGORIES
+from credence_agents.environment.categories import CATEGORIES
 
 
 # --- Fixtures ---

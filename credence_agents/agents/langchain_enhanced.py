@@ -7,15 +7,15 @@ LangChain baseline.
 
 from __future__ import annotations
 
-from credence.agents.common import DecisionStep
-from credence.agents.langchain_agent import (
+from credence_agents.agents.common import DecisionStep
+from credence_agents.agents.langchain_agent import (
     SYSTEM_PROMPT,
     TOOL_NAMES,
     LangChainAgent,
     _action_str,
     _get_llm,
 )
-from credence.inference.decision import Action, ActionType
+from credence_agents.inference.decision import Action, ActionType
 
 # SPEC §4.2 enhanced prompt — appended to the standard system prompt
 STRATEGY_PROMPT = """

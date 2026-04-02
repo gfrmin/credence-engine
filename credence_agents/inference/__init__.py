@@ -5,14 +5,14 @@ Julia Credence DSL. This package retains configuration types and post-question
 feedback logic used by the Python agent and benchmark harness.
 """
 
-from credence.inference.voi import (
+from credence_agents.inference.voi import (
     PENALTY_WRONG,
     REWARD_ABSTAIN,
     REWARD_CORRECT,
     ScoringRule,
     ToolConfig,
 )
-from credence.inference.decision import (
+from credence_agents.inference.decision import (
     Action,
     ActionType,
     compute_binary_reliability_updates,

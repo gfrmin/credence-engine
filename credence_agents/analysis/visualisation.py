@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from credence.environment.benchmark import BenchmarkResult
-from credence.environment.categories import CATEGORIES as _DEFAULT_CATEGORIES
+from credence_agents.environment.benchmark import BenchmarkResult
+from credence_agents.environment.categories import CATEGORIES as _DEFAULT_CATEGORIES
 
 
 def set_publication_style() -> None:
@@ -170,7 +170,7 @@ def reliability_learning_curve(
     categories_to_plot: tuple[str, ...] = ("factual", "numerical"),
 ) -> plt.Figure:
     """Plot learned vs true reliability for selected tool-category pairs."""
-    from credence.analysis.metrics import learned_vs_true_reliability
+    from credence_agents.analysis.metrics import learned_vs_true_reliability
 
     data = learned_vs_true_reliability(agent, true_tools)
     n_tools = len(data)

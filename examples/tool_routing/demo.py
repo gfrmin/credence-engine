@@ -16,11 +16,11 @@ from collections import Counter
 
 import numpy as np
 
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.environment.categories import CATEGORIES
-from credence.environment.questions import Question, get_questions
-from credence.environment.tools import ResponseType, query_tool, tool_config_for
-from credence.inference.voi import ScoringRule
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.environment.questions import Question, get_questions
+from credence_agents.environment.tools import ResponseType, query_tool, tool_config_for
+from credence_agents.inference.voi import ScoringRule
 
 from tools import (
     TOOL_MONETARY_COSTS,

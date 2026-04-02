@@ -11,14 +11,14 @@ from __future__ import annotations
 
 import pytest
 
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.environment.categories import CATEGORIES
-from credence.inference.decision import ActionType
-from credence.inference.voi import ToolConfig
-from credence.environment.tools import make_spec_tools, tool_config_for, query_tool, ResponseType
-from credence.environment.questions import Question, get_questions
-from credence.environment.benchmark import run_benchmark
-from credence.julia_bridge import CredenceBridge
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.inference.decision import ActionType
+from credence_agents.inference.voi import ToolConfig
+from credence_agents.environment.tools import make_spec_tools, tool_config_for, query_tool, ResponseType
+from credence_agents.environment.questions import Question, get_questions
+from credence_agents.environment.benchmark import run_benchmark
+from credence_agents.julia_bridge import CredenceBridge
 
 # --- Helpers ---
 

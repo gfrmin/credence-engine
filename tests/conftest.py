@@ -1,7 +1,7 @@
 """Shared fixtures for credence-engine tests."""
 
 import pytest
-from credence.julia_bridge import CredenceBridge
+from credence_agents.julia_bridge import CredenceBridge
 
 
 @pytest.fixture(scope="session")

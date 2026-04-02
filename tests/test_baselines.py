@@ -8,19 +8,19 @@ from __future__ import annotations
 
 import pytest
 
-from credence.agents.baselines import (
+from credence_agents.agents.baselines import (
     AllToolsAgent,
     OracleAgent,
     RandomAgent,
     SingleBestToolAgent,
 )
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.agents.common import DecisionStep
-from credence.environment.benchmark import run_benchmark
-from credence.environment.categories import CATEGORIES
-from credence.environment.questions import Question, get_questions
-from credence.environment.tools import make_spec_tools, tool_config_for
-from credence.julia_bridge import CredenceBridge
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.agents.common import DecisionStep
+from credence_agents.environment.benchmark import run_benchmark
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.environment.questions import Question, get_questions
+from credence_agents.environment.tools import make_spec_tools, tool_config_for
+from credence_agents.julia_bridge import CredenceBridge
 
 
 # --- Fixtures ---
@@ -244,18 +244,18 @@ class TestLangChainImports:
     """Verify LangChain agents can be imported and constructed without LLM calls."""
 
     def test_langchain_agent_import(self):
-        from credence.agents.langchain_agent import LangChainAgent
+        from credence_agents.agents.langchain_agent import LangChainAgent
         agent = LangChainAgent()
         assert agent.name == "langchain_react"
 
     def test_langchain_enhanced_import(self):
-        from credence.agents.langchain_enhanced import LangChainEnhancedAgent
+        from credence_agents.agents.langchain_enhanced import LangChainEnhancedAgent
         agent = LangChainEnhancedAgent()
         assert agent.name == "langchain_enhanced"
 
     def test_langchain_agent_protocol(self):
         """LangChainAgent has the required protocol methods."""
-        from credence.agents.langchain_agent import LangChainAgent
+        from credence_agents.agents.langchain_agent import LangChainAgent
         agent = LangChainAgent()
         assert hasattr(agent, "on_question_start")
         assert hasattr(agent, "choose_action")
@@ -264,13 +264,13 @@ class TestLangChainImports:
         assert hasattr(agent, "name")
 
     def test_langchain_enhanced_has_history(self):
-        from credence.agents.langchain_enhanced import LangChainEnhancedAgent
+        from credence_agents.agents.langchain_enhanced import LangChainEnhancedAgent
         agent = LangChainEnhancedAgent()
         assert hasattr(agent, "_history")
         assert agent._history == []
 
     def test_enhanced_system_prompt_includes_strategy(self):
-        from credence.agents.langchain_enhanced import ENHANCED_SYSTEM_PROMPT
+        from credence_agents.agents.langchain_enhanced import ENHANCED_SYSTEM_PROMPT
         assert "STRATEGY GUIDANCE" in ENHANCED_SYSTEM_PROMPT
         assert "TOOL SELECTION" in ENHANCED_SYSTEM_PROMPT
         assert "calculator is perfect for maths" in ENHANCED_SYSTEM_PROMPT

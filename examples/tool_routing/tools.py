@@ -9,8 +9,8 @@ Four tools that mirror a realistic routing scenario:
 
 from __future__ import annotations
 
-from credence.environment.categories import CATEGORIES
-from credence.environment.tools import ResponseType, SimulatedTool
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.environment.tools import ResponseType, SimulatedTool
 
 # Real-world costs per short MC query (~200 input + 20 output tokens)
 # Latency in seconds (used to compute effective cost)

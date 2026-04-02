@@ -17,17 +17,17 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from credence.agents.bayesian_agent import BayesianAgent
-from credence.agents.common import DecisionStep
-from credence.analysis.metrics import accuracy, total_score, tool_calls_per_question
-from credence.analysis.visualisation import score_comparison_bar, tool_calls_comparison
-from credence.environment.benchmark import BenchmarkResult, run_benchmark
-from credence.environment.categories import CATEGORIES
-from credence.environment.questions import get_questions
-from credence.environment.tools import make_spec_tools, tool_config_for
-from credence.inference.decision import Action, ActionType
-from credence.inference.voi import ScoringRule
-from credence.julia_bridge import CredenceBridge
+from credence_agents.agents.bayesian_agent import BayesianAgent
+from credence_agents.agents.common import DecisionStep
+from credence_agents.analysis.metrics import accuracy, total_score, tool_calls_per_question
+from credence_agents.analysis.visualisation import score_comparison_bar, tool_calls_comparison
+from credence_agents.environment.benchmark import BenchmarkResult, run_benchmark
+from credence_agents.environment.categories import CATEGORIES
+from credence_agents.environment.questions import get_questions
+from credence_agents.environment.tools import make_spec_tools, tool_config_for
+from credence_agents.inference.decision import Action, ActionType
+from credence_agents.inference.voi import ScoringRule
+from credence_agents.julia_bridge import CredenceBridge
 
 
 RESULTS_DIR = Path("results")
